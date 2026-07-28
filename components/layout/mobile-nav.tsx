@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComposeDialog } from "@/components/layout/compose-dialog";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
@@ -24,8 +25,8 @@ import type { Profile } from "@/lib/types";
 /** Sticky top bar for phones/tablets (hidden once the left sidebar appears). */
 export function MobileTopBar({ profile }: { profile: Profile | null }) {
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur lg:hidden">
-      <div className="flex w-16 justify-start">
+    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur lg:hidden">
+      <div className="flex flex-1 items-center justify-start">
         {profile ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -66,7 +67,8 @@ export function MobileTopBar({ profile }: { profile: Profile | null }) {
         🐦
       </Link>
 
-      <div className="flex w-16 justify-end">
+      <div className="flex flex-1 items-center justify-end gap-1">
+        {profile && <NotificationBell variant="icon" />}
         <ThemeToggle />
       </div>
     </header>

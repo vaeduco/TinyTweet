@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
   Home,
   LogOut,
   MoreHorizontal,
@@ -24,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComposeDialog } from "@/components/layout/compose-dialog";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
@@ -102,13 +102,7 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
           icon={Search}
           active={isActive("/search")}
         />
-        <NavRow
-          href="#"
-          label="Notifications"
-          icon={Bell}
-          disabled
-          title="Notifications — coming soon"
-        />
+        {profile && <NotificationBell variant="rail" />}
         {profile && (
           <NavRow
             href={`/${profile.username}`}

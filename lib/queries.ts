@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Database,
+  NotificationWithActor,
   Post,
   PostWithAuthor,
   Profile,
@@ -308,4 +309,37 @@ export async function getWhoToFollow(
   return ((data ?? []) as Profile[])
     .filter((p) => !exclude.has(p.id))
     .slice(0, limit);
+}
+
+// ---- Notifications ----
+
+const NOTIFICATION_SELECT =
+  "*, actor:profiles!notifications_actor_id_fkey(*)";
+
+export async function getNotifications(
+  client: Client,
+  userId: string,
+  limit = 30
+): Promise<NotificationWithActor[]> {
+  const { data } = await client
+    .from("notifications")
+    .select(NOTIFICATION_SELECT)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data ?? []) as unknown as NotificationWithActor[];
+}
+
+export async function getUnreadNotificationCount(
+  client: Client,
+  userId: string
+): Promise<number> {
+  const { count } = await client
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
+
+  return count ?? 0;
 }

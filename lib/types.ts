@@ -42,6 +42,19 @@ export type Follow = {
   created_at: string;
 };
 
+export type NotificationType = "follow" | "like" | "reply" | "mention";
+
+export type Notification = {
+  id: string;
+  user_id: string; // recipient
+  type: NotificationType;
+  actor_id: string; // who triggered it
+  reference_id: string | null; // related post id (null for follow)
+  reply_id: string | null; // originating reply id (reply / mention-in-reply)
+  is_read: boolean;
+  created_at: string;
+};
+
 // ---- Enriched shapes returned by joined queries ----
 
 /** A post with its author profile joined in, plus per-viewer metadata. */
@@ -54,6 +67,11 @@ export type PostWithAuthor = Post & {
 /** A reply with its author profile joined in. */
 export type ReplyWithAuthor = Reply & {
   author: Profile;
+};
+
+/** A notification with the acting user's profile joined in. */
+export type NotificationWithActor = Notification & {
+  actor: Profile;
 };
 
 /** Profile plus counts + whether the viewer follows this profile. */
@@ -126,6 +144,21 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Follow> & Timestamped;
+        Relationships: [];
+      };
+      notifications: {
+        Row: Notification;
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: NotificationType;
+          actor_id: string;
+          reference_id?: string | null;
+          reply_id?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Pick<Notification, "is_read">>;
         Relationships: [];
       };
     };
