@@ -268,7 +268,16 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      conversation_members: {
+        Row: {
+          conversation_id: string;
+          user_id: string;
+          joined_at: string;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       create_conversation: {
         Args: {
@@ -283,6 +292,10 @@ export type Database = {
         Returns: undefined;
       };
       is_conversation_participant: {
+        Args: { conv: string };
+        Returns: boolean;
+      };
+      is_group_conversation: {
         Args: { conv: string };
         Returns: boolean;
       };

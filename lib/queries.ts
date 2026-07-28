@@ -349,9 +349,6 @@ export async function getUnreadNotificationCount(
 
 // ---- Messaging ----
 
-const PARTICIPANT_PROFILE =
-  "conversation_id, profile:profiles!conversation_participants_user_id_fkey(*)";
-
 function computeUnread(
   conv: Pick<
     Conversation,
@@ -387,26 +384,34 @@ export async function getInbox(
   const partByConv = new Map(parts.map((p) => [p.conversation_id, p]));
   const convIds = parts.map((p) => p.conversation_id);
 
-  const [{ data: convData }, { data: memberData }] = await Promise.all([
+  const [{ data: convData }, { data: memberRows }] = await Promise.all([
     client
       .from("conversations")
       .select("*")
       .in("id", convIds)
       .order("last_message_at", { ascending: false }),
     client
-      .from("conversation_participants")
-      .select(PARTICIPANT_PROFILE)
+      .from("conversation_members")
+      .select("conversation_id, user_id")
       .in("conversation_id", convIds),
   ]);
 
+  // Member profiles come from the conversation_members view (ids only) plus a
+  // profiles lookup, so co-participants' private per-user flags stay unreadable
+  // (those live on conversation_participants, which is now own-row only).
+  const rows = (memberRows ?? []) as { conversation_id: string; user_id: string }[];
+  const memberIds = [...new Set(rows.map((r) => r.user_id))];
+  const { data: profData } = memberIds.length
+    ? await client.from("profiles").select("*").in("id", memberIds)
+    : { data: [] as Profile[] };
+  const profById = new Map(((profData ?? []) as Profile[]).map((p) => [p.id, p]));
+
   const membersByConv = new Map<string, Profile[]>();
-  for (const row of (memberData ?? []) as unknown as {
-    conversation_id: string;
-    profile: Profile | null;
-  }[]) {
-    if (!row.profile) continue;
+  for (const row of rows) {
+    const profile = profById.get(row.user_id);
+    if (!profile) continue;
     const arr = membersByConv.get(row.conversation_id) ?? [];
-    arr.push(row.profile);
+    arr.push(profile);
     membersByConv.set(row.conversation_id, arr);
   }
 
@@ -443,16 +448,18 @@ export async function getConversationForViewer(
     .maybeSingle();
   if (!conv) return null;
 
-  const { data: memberData } = await client
-    .from("conversation_participants")
-    .select("profile:profiles!conversation_participants_user_id_fkey(*)")
+  const { data: memberRows } = await client
+    .from("conversation_members")
+    .select("user_id")
     .eq("conversation_id", conversationId);
 
-  const participants = ((memberData ?? []) as unknown as {
-    profile: Profile | null;
-  }[])
-    .map((r) => r.profile)
-    .filter((p): p is Profile => !!p);
+  const memberIds = ((memberRows ?? []) as { user_id: string }[]).map(
+    (r) => r.user_id
+  );
+  const { data: profData } = memberIds.length
+    ? await client.from("profiles").select("*").in("id", memberIds)
+    : { data: [] as Profile[] };
+  const participants = (profData ?? []) as Profile[];
 
   return {
     conversation: conv as Conversation,
