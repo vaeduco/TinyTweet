@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/follow-button";
 import { MessageButton } from "@/components/messages/message-button";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
+import { PresenceStatus } from "@/components/presence/presence-status";
 import { renderContent } from "@/lib/parse";
 import type { ProfileWithStats } from "@/lib/types";
 
@@ -55,6 +56,13 @@ export function ProfileHeader({
             {profile.display_name || profile.username}
           </h2>
           <p className="text-muted-foreground">@{profile.username}</p>
+          {!isOwner && (
+            <PresenceStatus
+              userId={profile.id}
+              lastSeenAt={profile.last_seen_at}
+              className="mt-1"
+            />
+          )}
         </div>
 
         {profile.bio && (

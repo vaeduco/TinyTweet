@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ConversationAvatar } from "@/components/messages/conversation-avatar";
 import { ConversationMenu } from "@/components/messages/conversation-menu";
 import { useMessages } from "@/components/messages/messages-provider";
+import { usePresence } from "@/components/presence/presence-provider";
 import { conversationDisplay } from "@/lib/conversation";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ export function Inbox({
   const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
   const { isUnread, isMuted } = useMessages();
+  const { isOnline } = usePresence();
   const [tab, setTab] = React.useState<"all" | "archived">("all");
 
   React.useEffect(() => {
@@ -97,6 +99,8 @@ export function Inbox({
           const emph = isUnread(c.id) && !muted; // emphasise only un-muted unread
           const mine = c.last_message_sender_id === currentUserId;
           const preview = c.last_message_preview ?? "No messages yet";
+          const peer = !c.is_group ? c.others[0] : undefined;
+          const peerOnline = !!peer && isOnline(peer.id);
           return (
             <div
               key={c.id}
@@ -109,7 +113,15 @@ export function Inbox({
                 href={`/messages/${c.id}`}
                 className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4"
               >
-                <ConversationAvatar avatars={d.avatars} isGroup={d.isGroup} />
+                <span className="relative shrink-0">
+                  <ConversationAvatar avatars={d.avatars} isGroup={d.isGroup} />
+                  {peerOnline && (
+                    <span
+                      className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background bg-green-500"
+                      aria-label="Active now"
+                    />
+                  )}
+                </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     {c.is_pinned && (

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { ConversationAvatar } from "@/components/messages/conversation-avatar";
+import { PresenceStatus } from "@/components/presence/presence-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -219,6 +220,7 @@ export function ThreadView({
                     avatar_url: null,
                     created_at: "",
                     updated_at: "",
+                    last_seen_at: null,
                   } as Profile),
               },
             ]
@@ -244,9 +246,18 @@ export function ThreadView({
         />
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold leading-tight">{display.title}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {display.handle ? `@${display.handle}` : `${participants.length} members`}
-          </p>
+          {display.isGroup || !others[0] ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {display.isGroup
+                ? `${participants.length} members`
+                : `@${display.handle}`}
+            </p>
+          ) : (
+            <PresenceStatus
+              userId={others[0].id}
+              lastSeenAt={others[0].last_seen_at}
+            />
+          )}
         </div>
         {conversation.is_group && (
           <AddPeople

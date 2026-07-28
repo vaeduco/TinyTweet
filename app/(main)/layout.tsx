@@ -8,6 +8,7 @@ import {
 } from "@/lib/queries";
 import { NotificationsProvider } from "@/components/notifications/notifications-provider";
 import { MessagesProvider } from "@/components/messages/messages-provider";
+import { PresenceProvider } from "@/components/presence/presence-provider";
 import { LeftSidebar } from "@/components/layout/left-sidebar";
 import {
   RightSidebar,
@@ -64,6 +65,7 @@ export default async function MainLayout({
         initialUnreadIds={initialUnreadConversationIds}
         initialMutedIds={initialMutedConversationIds}
       >
+        <PresenceProvider userId={user?.id ?? null}>
         <div className="min-h-screen">
           <MobileTopBar profile={profile} />
 
@@ -81,6 +83,7 @@ export default async function MainLayout({
 
           <MobileBottomNav profile={profile} />
         </div>
+        </PresenceProvider>
       </MessagesProvider>
     </NotificationsProvider>
   );

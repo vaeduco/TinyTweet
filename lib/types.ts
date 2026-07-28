@@ -9,6 +9,7 @@ export type Profile = {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  last_seen_at: string | null;
 };
 
 export type Post = {
@@ -149,6 +150,7 @@ export type Database = {
           avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
+          last_seen_at?: string | null;
         };
         Update: Partial<Omit<Profile, "id">>;
         Relationships: [];
