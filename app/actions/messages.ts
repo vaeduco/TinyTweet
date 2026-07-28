@@ -126,3 +126,126 @@ export async function addParticipants(input: {
   revalidatePath(`/messages/${input.conversationId}`);
   return {};
 }
+
+// ---- Per-user conversation options ----
+
+const MAX_PINNED = 3;
+
+async function updateOwnParticipant(
+  conversationId: string,
+  patch: {
+    is_archived?: boolean;
+    deleted_at?: string | null;
+    is_muted?: boolean;
+    is_pinned?: boolean;
+    pinned_at?: string | null;
+    last_read_at?: string;
+  }
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("conversation_participants")
+    .update(patch)
+    .eq("conversation_id", conversationId)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/messages");
+  return {};
+}
+
+export async function setConversationArchived(
+  conversationId: string,
+  archived: boolean
+): Promise<{ error?: string }> {
+  return updateOwnParticipant(conversationId, { is_archived: archived });
+}
+
+export async function setConversationMuted(
+  conversationId: string,
+  muted: boolean
+): Promise<{ error?: string }> {
+  return updateOwnParticipant(conversationId, { is_muted: muted });
+}
+
+/** Soft-delete for this user only; a new message will bring it back. */
+export async function deleteConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  return updateOwnParticipant(conversationId, {
+    deleted_at: new Date().toISOString(),
+  });
+}
+
+export async function markConversationUnread(
+  conversationId: string
+): Promise<{ error?: string }> {
+  // Reset last_read_at so the unread indicator returns (epoch = definitely old).
+  return updateOwnParticipant(conversationId, {
+    last_read_at: new Date(0).toISOString(),
+  });
+}
+
+export async function setConversationPinned(
+  conversationId: string,
+  pinned: boolean
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (pinned) {
+    const { count } = await supabase
+      .from("conversation_participants")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_pinned", true)
+      .is("deleted_at", null);
+    if ((count ?? 0) >= MAX_PINNED) {
+      return { error: `You can pin up to ${MAX_PINNED} conversations.` };
+    }
+  }
+
+  return updateOwnParticipant(conversationId, {
+    is_pinned: pinned,
+    pinned_at: pinned ? new Date().toISOString() : null,
+  });
+}
+
+/** Leave a group: remove only your own participant row. */
+export async function leaveConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Leaving is for groups only; direct chats use soft-delete instead.
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("is_group")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conv?.is_group) {
+    return { error: "You can only leave group conversations." };
+  }
+
+  const { error } = await supabase
+    .from("conversation_participants")
+    .delete()
+    .eq("conversation_id", conversationId)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/messages");
+  return {};
+}

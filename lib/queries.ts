@@ -375,13 +375,16 @@ export async function getInbox(
 ): Promise<ConversationWithMeta[]> {
   const { data: myParts } = await client
     .from("conversation_participants")
-    .select("conversation_id, last_read_at")
-    .eq("user_id", userId);
+    .select(
+      "conversation_id, last_read_at, is_archived, deleted_at, is_muted, is_pinned, pinned_at"
+    )
+    .eq("user_id", userId)
+    .is("deleted_at", null);
 
   const parts = myParts ?? [];
   if (parts.length === 0) return [];
 
-  const lastReadByConv = new Map(parts.map((p) => [p.conversation_id, p.last_read_at]));
+  const partByConv = new Map(parts.map((p) => [p.conversation_id, p]));
   const convIds = parts.map((p) => p.conversation_id);
 
   const [{ data: convData }, { data: memberData }] = await Promise.all([
@@ -409,11 +412,16 @@ export async function getInbox(
 
   return ((convData ?? []) as Conversation[]).map((c) => {
     const participants = membersByConv.get(c.id) ?? [];
+    const mine = partByConv.get(c.id);
     return {
       ...c,
       participants,
       others: participants.filter((p) => p.id !== userId),
-      unread: computeUnread(c, userId, lastReadByConv.get(c.id)),
+      unread: computeUnread(c, userId, mine?.last_read_at),
+      is_archived: !!mine?.is_archived,
+      is_muted: !!mine?.is_muted,
+      is_pinned: !!mine?.is_pinned,
+      pinned_at: mine?.pinned_at ?? null,
     };
   });
 }
@@ -498,7 +506,9 @@ export async function getUnreadConversationIds(
   const { data: myParts } = await client
     .from("conversation_participants")
     .select("conversation_id, last_read_at")
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .eq("is_archived", false);
 
   const parts = myParts ?? [];
   if (parts.length === 0) return [];
@@ -519,4 +529,18 @@ export async function getUnreadConversationIds(
     if (computeUnread(c, userId, lastReadByConv.get(c.id))) unread.push(c.id);
   }
   return unread;
+}
+
+/** Conversation ids the viewer has muted (for the nav-badge suppression). */
+export async function getMutedConversationIds(
+  client: Client,
+  userId: string
+): Promise<string[]> {
+  const { data } = await client
+    .from("conversation_participants")
+    .select("conversation_id")
+    .eq("user_id", userId)
+    .eq("is_muted", true)
+    .is("deleted_at", null);
+  return (data ?? []).map((p) => p.conversation_id);
 }

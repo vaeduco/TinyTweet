@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
+  getMutedConversationIds,
   getNotifications,
   getUnreadConversationIds,
   getUnreadNotificationCount,
@@ -29,6 +30,7 @@ export default async function MainLayout({
   let initialNotifications: NotificationWithActor[] = [];
   let initialUnread = 0;
   let initialUnreadConversationIds: string[] = [];
+  let initialMutedConversationIds: string[] = [];
 
   if (user) {
     const { data } = await supabase
@@ -38,12 +40,17 @@ export default async function MainLayout({
       .maybeSingle();
     profile = (data as Profile) ?? null;
 
-    [initialNotifications, initialUnread, initialUnreadConversationIds] =
-      await Promise.all([
-        getNotifications(supabase, user.id),
-        getUnreadNotificationCount(supabase, user.id),
-        getUnreadConversationIds(supabase, user.id),
-      ]);
+    [
+      initialNotifications,
+      initialUnread,
+      initialUnreadConversationIds,
+      initialMutedConversationIds,
+    ] = await Promise.all([
+      getNotifications(supabase, user.id),
+      getUnreadNotificationCount(supabase, user.id),
+      getUnreadConversationIds(supabase, user.id),
+      getMutedConversationIds(supabase, user.id),
+    ]);
   }
 
   return (
@@ -55,6 +62,7 @@ export default async function MainLayout({
       <MessagesProvider
         userId={user?.id ?? null}
         initialUnreadIds={initialUnreadConversationIds}
+        initialMutedIds={initialMutedConversationIds}
       >
         <div className="min-h-screen">
           <MobileTopBar profile={profile} />

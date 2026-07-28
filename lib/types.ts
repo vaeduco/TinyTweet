@@ -92,6 +92,11 @@ export type ConversationParticipant = {
   user_id: string;
   joined_at: string;
   last_read_at: string;
+  is_archived: boolean;
+  deleted_at: string | null;
+  is_muted: boolean;
+  is_pinned: boolean;
+  pinned_at: string | null;
 };
 
 export type MessageStatus = "sent" | "delivered";
@@ -112,6 +117,11 @@ export type ConversationWithMeta = Conversation & {
   participants: Profile[]; // all members, including the viewer
   others: Profile[]; // members excluding the viewer
   unread: boolean;
+  // The viewer's per-user flags (from their participant row).
+  is_archived: boolean;
+  is_muted: boolean;
+  is_pinned: boolean;
+  pinned_at: string | null;
 };
 
 /** Profile plus counts + whether the viewer follows this profile. */
@@ -223,8 +233,23 @@ export type Database = {
           user_id: string;
           joined_at?: string;
           last_read_at?: string;
+          is_archived?: boolean;
+          deleted_at?: string | null;
+          is_muted?: boolean;
+          is_pinned?: boolean;
+          pinned_at?: string | null;
         };
-        Update: Partial<Pick<ConversationParticipant, "last_read_at">>;
+        Update: Partial<
+          Pick<
+            ConversationParticipant,
+            | "last_read_at"
+            | "is_archived"
+            | "deleted_at"
+            | "is_muted"
+            | "is_pinned"
+            | "pinned_at"
+          >
+        >;
         Relationships: [];
       };
       messages: {
