@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
+  Conversation,
+  ConversationWithMeta,
   Database,
+  MessageWithSender,
   NotificationWithActor,
   Post,
   PostWithAuthor,
@@ -342,4 +345,178 @@ export async function getUnreadNotificationCount(
     .eq("is_read", false);
 
   return count ?? 0;
+}
+
+// ---- Messaging ----
+
+const PARTICIPANT_PROFILE =
+  "conversation_id, profile:profiles!conversation_participants_user_id_fkey(*)";
+
+function computeUnread(
+  conv: Pick<
+    Conversation,
+    "last_message_at" | "last_message_preview" | "last_message_sender_id"
+  >,
+  viewerId: string,
+  lastReadAt: string | undefined
+): boolean {
+  return (
+    !!conv.last_message_preview &&
+    conv.last_message_sender_id !== null &&
+    conv.last_message_sender_id !== viewerId &&
+    (!lastReadAt || conv.last_message_at > lastReadAt)
+  );
+}
+
+/** The viewer's conversations, newest activity first, with members + unread flag. */
+export async function getInbox(
+  client: Client,
+  userId: string
+): Promise<ConversationWithMeta[]> {
+  const { data: myParts } = await client
+    .from("conversation_participants")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
+
+  const parts = myParts ?? [];
+  if (parts.length === 0) return [];
+
+  const lastReadByConv = new Map(parts.map((p) => [p.conversation_id, p.last_read_at]));
+  const convIds = parts.map((p) => p.conversation_id);
+
+  const [{ data: convData }, { data: memberData }] = await Promise.all([
+    client
+      .from("conversations")
+      .select("*")
+      .in("id", convIds)
+      .order("last_message_at", { ascending: false }),
+    client
+      .from("conversation_participants")
+      .select(PARTICIPANT_PROFILE)
+      .in("conversation_id", convIds),
+  ]);
+
+  const membersByConv = new Map<string, Profile[]>();
+  for (const row of (memberData ?? []) as unknown as {
+    conversation_id: string;
+    profile: Profile | null;
+  }[]) {
+    if (!row.profile) continue;
+    const arr = membersByConv.get(row.conversation_id) ?? [];
+    arr.push(row.profile);
+    membersByConv.set(row.conversation_id, arr);
+  }
+
+  return ((convData ?? []) as Conversation[]).map((c) => {
+    const participants = membersByConv.get(c.id) ?? [];
+    return {
+      ...c,
+      participants,
+      others: participants.filter((p) => p.id !== userId),
+      unread: computeUnread(c, userId, lastReadByConv.get(c.id)),
+    };
+  });
+}
+
+/** A single conversation the viewer belongs to (RLS returns null otherwise). */
+export async function getConversationForViewer(
+  client: Client,
+  conversationId: string,
+  userId: string
+): Promise<{
+  conversation: Conversation;
+  participants: Profile[];
+  others: Profile[];
+} | null> {
+  const { data: conv } = await client
+    .from("conversations")
+    .select("*")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conv) return null;
+
+  const { data: memberData } = await client
+    .from("conversation_participants")
+    .select("profile:profiles!conversation_participants_user_id_fkey(*)")
+    .eq("conversation_id", conversationId);
+
+  const participants = ((memberData ?? []) as unknown as {
+    profile: Profile | null;
+  }[])
+    .map((r) => r.profile)
+    .filter((p): p is Profile => !!p);
+
+  return {
+    conversation: conv as Conversation,
+    participants,
+    others: participants.filter((p) => p.id !== userId),
+  };
+}
+
+export async function getMessages(
+  client: Client,
+  conversationId: string,
+  limit = 100
+): Promise<MessageWithSender[]> {
+  // Fetch the newest `limit` messages, then reverse to chronological order.
+  // (ORDER BY asc + LIMIT would return the OLDEST rows and hide recent activity.)
+  const { data } = await client
+    .from("messages")
+    .select("*, sender:profiles!messages_sender_id_fkey(*)")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit);
+
+  return ((data ?? []) as unknown as MessageWithSender[]).reverse();
+}
+
+/** People the viewer follows (for the "new message" search). */
+export async function getFollowedProfiles(
+  client: Client,
+  userId: string,
+  search?: string
+): Promise<Profile[]> {
+  const followingIds = await getFollowingIds(client, userId);
+  if (followingIds.length === 0) return [];
+
+  let query = client.from("profiles").select("*").in("id", followingIds);
+  const term = search ? sanitizeTerm(search) : "";
+  if (term) {
+    query = query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
+  }
+
+  const { data } = await query.order("username").limit(50);
+  return (data ?? []) as Profile[];
+}
+
+/** Conversation ids with unread messages (for the nav badge / provider seed). */
+export async function getUnreadConversationIds(
+  client: Client,
+  userId: string
+): Promise<string[]> {
+  const { data: myParts } = await client
+    .from("conversation_participants")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
+
+  const parts = myParts ?? [];
+  if (parts.length === 0) return [];
+
+  const lastReadByConv = new Map(parts.map((p) => [p.conversation_id, p.last_read_at]));
+  const convIds = parts.map((p) => p.conversation_id);
+
+  const { data: convData } = await client
+    .from("conversations")
+    .select("id, last_message_at, last_message_preview, last_message_sender_id")
+    .in("id", convIds);
+
+  const unread: string[] = [];
+  for (const c of (convData ?? []) as (Pick<
+    Conversation,
+    "last_message_at" | "last_message_preview" | "last_message_sender_id"
+  > & { id: string })[]) {
+    if (computeUnread(c, userId, lastReadByConv.get(c.id))) unread.push(c.id);
+  }
+  return unread;
 }

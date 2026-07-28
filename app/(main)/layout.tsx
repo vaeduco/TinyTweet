@@ -1,7 +1,12 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getNotifications, getUnreadNotificationCount } from "@/lib/queries";
+import {
+  getNotifications,
+  getUnreadConversationIds,
+  getUnreadNotificationCount,
+} from "@/lib/queries";
 import { NotificationsProvider } from "@/components/notifications/notifications-provider";
+import { MessagesProvider } from "@/components/messages/messages-provider";
 import { LeftSidebar } from "@/components/layout/left-sidebar";
 import {
   RightSidebar,
@@ -23,6 +28,7 @@ export default async function MainLayout({
   let profile: Profile | null = null;
   let initialNotifications: NotificationWithActor[] = [];
   let initialUnread = 0;
+  let initialUnreadConversationIds: string[] = [];
 
   if (user) {
     const { data } = await supabase
@@ -32,10 +38,12 @@ export default async function MainLayout({
       .maybeSingle();
     profile = (data as Profile) ?? null;
 
-    [initialNotifications, initialUnread] = await Promise.all([
-      getNotifications(supabase, user.id),
-      getUnreadNotificationCount(supabase, user.id),
-    ]);
+    [initialNotifications, initialUnread, initialUnreadConversationIds] =
+      await Promise.all([
+        getNotifications(supabase, user.id),
+        getUnreadNotificationCount(supabase, user.id),
+        getUnreadConversationIds(supabase, user.id),
+      ]);
   }
 
   return (
@@ -44,23 +52,28 @@ export default async function MainLayout({
       initialNotifications={initialNotifications}
       initialUnread={initialUnread}
     >
-      <div className="min-h-screen">
-        <MobileTopBar profile={profile} />
+      <MessagesProvider
+        userId={user?.id ?? null}
+        initialUnreadIds={initialUnreadConversationIds}
+      >
+        <div className="min-h-screen">
+          <MobileTopBar profile={profile} />
 
-        <div className="mx-auto flex w-full max-w-[1290px] justify-center">
-          <LeftSidebar profile={profile} />
+          <div className="mx-auto flex w-full max-w-[1290px] justify-center">
+            <LeftSidebar profile={profile} />
 
-          <main className="min-h-screen w-full min-w-0 max-w-[600px] border-x border-border pb-24 lg:pb-0">
-            {children}
-          </main>
+            <main className="min-h-screen w-full min-w-0 max-w-[600px] border-x border-border pb-16 lg:pb-0">
+              {children}
+            </main>
 
-          <Suspense fallback={<RightSidebarSkeleton />}>
-            <RightSidebar viewerId={user?.id ?? null} />
-          </Suspense>
+            <Suspense fallback={<RightSidebarSkeleton />}>
+              <RightSidebar viewerId={user?.id ?? null} />
+            </Suspense>
+          </div>
+
+          <MobileBottomNav profile={profile} />
         </div>
-
-        <MobileBottomNav profile={profile} />
-      </div>
+      </MessagesProvider>
     </NotificationsProvider>
   );
 }

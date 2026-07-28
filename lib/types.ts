@@ -74,6 +74,43 @@ export type NotificationWithActor = Notification & {
   actor: Profile;
 };
 
+// ---- Messaging ----
+
+export type Conversation = {
+  id: string;
+  is_group: boolean;
+  name: string | null;
+  created_by: string | null;
+  created_at: string;
+  last_message_at: string;
+  last_message_preview: string | null;
+  last_message_sender_id: string | null;
+};
+
+export type ConversationParticipant = {
+  conversation_id: string;
+  user_id: string;
+  joined_at: string;
+  last_read_at: string;
+};
+
+export type Message = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+};
+
+export type MessageWithSender = Message & { sender: Profile };
+
+/** A conversation enriched for the inbox and thread header. */
+export type ConversationWithMeta = Conversation & {
+  participants: Profile[]; // all members, including the viewer
+  others: Profile[]; // members excluding the viewer
+  unread: boolean;
+};
+
 /** Profile plus counts + whether the viewer follows this profile. */
 export type ProfileWithStats = Profile & {
   followers_count: number;
@@ -161,9 +198,64 @@ export type Database = {
         Update: Partial<Pick<Notification, "is_read">>;
         Relationships: [];
       };
+      conversations: {
+        Row: Conversation;
+        Insert: {
+          id?: string;
+          is_group?: boolean;
+          name?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          last_message_at?: string;
+          last_message_preview?: string | null;
+          last_message_sender_id?: string | null;
+        };
+        Update: Partial<Conversation>;
+        Relationships: [];
+      };
+      conversation_participants: {
+        Row: ConversationParticipant;
+        Insert: {
+          conversation_id: string;
+          user_id: string;
+          joined_at?: string;
+          last_read_at?: string;
+        };
+        Update: Partial<Pick<ConversationParticipant, "last_read_at">>;
+        Relationships: [];
+      };
+      messages: {
+        Row: Message;
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: Partial<Pick<Message, "content">>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_conversation: {
+        Args: {
+          target_ids: string[];
+          is_group_in: boolean;
+          group_name: string | null;
+        };
+        Returns: string;
+      };
+      add_participants: {
+        Args: { conv: string; add_ids: string[] };
+        Returns: undefined;
+      };
+      is_conversation_participant: {
+        Args: { conv: string };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

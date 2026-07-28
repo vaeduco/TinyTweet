@@ -4,6 +4,7 @@ import { Calendar } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/follow-button";
+import { MessageButton } from "@/components/messages/message-button";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
 import { renderContent } from "@/lib/parse";
 import type { ProfileWithStats } from "@/lib/types";
@@ -35,10 +36,13 @@ export function ProfileHeader({
           {isOwner ? (
             <EditProfileDialog profile={profile} />
           ) : isAuthed ? (
-            <FollowButton
-              targetUserId={profile.id}
-              initialFollowing={profile.followed_by_me}
-            />
+            <div className="flex items-center gap-2">
+              <MessageButton targetId={profile.id} />
+              <FollowButton
+                targetUserId={profile.id}
+                initialFollowing={profile.followed_by_me}
+              />
+            </div>
           ) : (
             <Button asChild variant="default">
               <Link href="/login">Follow</Link>

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ComposeDialog } from "@/components/layout/compose-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { MessagesNavItem } from "@/components/messages/messages-nav-item";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
@@ -79,17 +80,9 @@ export function MobileTopBar({ profile }: { profile: Profile | null }) {
 export function MobileBottomNav({ profile }: { profile: Profile | null }) {
   const pathname = usePathname();
 
-  const items = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/search", label: "Search", icon: Search },
-    ...(profile
-      ? [{ href: `/${profile.username}`, label: "Profile", icon: UserIcon }]
-      : []),
-  ];
-
   return (
     <>
-      {profile && (
+      {profile && !pathname.startsWith("/messages") && (
         <div className="fixed bottom-20 right-4 z-40 lg:hidden">
           <ComposeDialog
             profile={profile}
@@ -110,29 +103,50 @@ export function MobileBottomNav({ profile }: { profile: Profile | null }) {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden"
       >
         <div className="mx-auto flex max-w-md items-center justify-around">
-          {items.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-3 transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
-                )}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon className="h-6 w-6" />
-                <span className="sr-only">{item.label}</span>
-              </Link>
-            );
-          })}
+          <BottomLink href="/" label="Home" icon={Home} active={pathname === "/"} />
+          <BottomLink
+            href="/search"
+            label="Search"
+            icon={Search}
+            active={pathname.startsWith("/search")}
+          />
+          {profile && <MessagesNavItem variant="bottom" />}
+          {profile && (
+            <BottomLink
+              href={`/${profile.username}`}
+              label="Profile"
+              icon={UserIcon}
+              active={pathname.startsWith(`/${profile.username}`)}
+            />
+          )}
         </div>
       </nav>
     </>
+  );
+}
+
+function BottomLink({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex flex-1 flex-col items-center gap-0.5 py-3 transition-colors",
+        active ? "text-primary" : "text-muted-foreground"
+      )}
+      aria-current={active ? "page" : undefined}
+    >
+      <Icon className="h-6 w-6" />
+      <span className="sr-only">{label}</span>
+    </Link>
   );
 }

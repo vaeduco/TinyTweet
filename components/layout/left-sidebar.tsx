@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ComposeDialog } from "@/components/layout/compose-dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { MessagesNavItem } from "@/components/messages/messages-nav-item";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
@@ -103,6 +104,7 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
           active={isActive("/search")}
         />
         {profile && <NotificationBell variant="rail" />}
+        {profile && <MessagesNavItem variant="rail" />}
         {profile && (
           <NavRow
             href={`/${profile.username}`}
