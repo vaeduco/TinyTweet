@@ -247,3 +247,65 @@ export async function getHashtagPosts(
 
   return withLiked(client, rows, viewerId);
 }
+
+// ---- Discovery (right sidebar): trending hashtags & who-to-follow ----
+
+export type TrendingHashtag = { tag: string; count: number };
+
+/** Top hashtags by number of posts using them within the last `hours`. */
+export async function getTrendingHashtags(
+  client: Client,
+  { hours = 24, limit = 6 }: { hours?: number; limit?: number } = {}
+): Promise<TrendingHashtag[]> {
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+  const { data } = await client
+    .from("posts")
+    .select("content, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const posts = data ?? [];
+  const recent = posts.filter((p) => p.created_at >= since);
+  // Fall back to all recently-fetched posts if nothing is in the window yet.
+  const pool = recent.length > 0 ? recent : posts;
+
+  const counts = new Map<string, number>();
+  for (const p of pool) {
+    for (const tag of extractHashtags(p.content)) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(counts, ([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+    .slice(0, limit);
+}
+
+/** Suggested profiles the viewer doesn't already follow (newest first). */
+export async function getWhoToFollow(
+  client: Client,
+  viewerId: string | null,
+  limit = 3
+): Promise<Profile[]> {
+  const exclude = new Set<string>();
+  if (viewerId) {
+    exclude.add(viewerId);
+    for (const id of await getFollowingIds(client, viewerId)) exclude.add(id);
+  }
+
+  // Over-fetch a small batch and filter self/followed in JS, so the exclude
+  // set is never serialized into the request URL (an unbounded `not.in` filter
+  // can overflow the URL and silently return nothing for very active users).
+  const { data, error } = await client
+    .from("profiles")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) return [];
+
+  return ((data ?? []) as Profile[])
+    .filter((p) => !exclude.has(p.id))
+    .slice(0, limit);
+}

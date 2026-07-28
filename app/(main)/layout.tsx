@@ -1,5 +1,11 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/navbar";
+import { LeftSidebar } from "@/components/layout/left-sidebar";
+import {
+  RightSidebar,
+  RightSidebarSkeleton,
+} from "@/components/layout/right-sidebar";
+import { MobileBottomNav, MobileTopBar } from "@/components/layout/mobile-nav";
 import type { Profile } from "@/lib/types";
 
 export default async function MainLayout({
@@ -24,10 +30,21 @@ export default async function MainLayout({
 
   return (
     <div className="min-h-screen">
-      <Navbar profile={profile} />
-      <main className="mx-auto min-h-[calc(100vh-3.5rem)] max-w-2xl border-x border-border pb-16 sm:pb-0">
-        {children}
-      </main>
+      <MobileTopBar profile={profile} />
+
+      <div className="mx-auto flex w-full max-w-[1290px] justify-center">
+        <LeftSidebar profile={profile} />
+
+        <main className="min-h-screen w-full min-w-0 max-w-[600px] border-x border-border pb-24 lg:pb-0">
+          {children}
+        </main>
+
+        <Suspense fallback={<RightSidebarSkeleton />}>
+          <RightSidebar viewerId={user?.id ?? null} />
+        </Suspense>
+      </div>
+
+      <MobileBottomNav profile={profile} />
     </div>
   );
 }

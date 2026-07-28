@@ -40,7 +40,7 @@ export default async function ProfilePage({
 
   return (
     <div>
-      <div className="sticky top-14 z-30 flex items-center gap-4 border-b border-border bg-background/80 px-4 py-3 backdrop-blur">
+      <div className="sticky top-14 lg:top-0 z-30 flex items-center gap-4 border-b border-border bg-background/80 px-4 py-3 backdrop-blur">
         <Link
           href="/"
           className="rounded-full p-1 text-foreground transition-colors hover:bg-muted"

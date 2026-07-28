@@ -26,7 +26,8 @@ export default async function SearchPage({
 
   return (
     <div>
-      <div className="sticky top-14 z-30 border-b border-border bg-background/80 px-4 py-3 backdrop-blur">
+      <div className="sticky top-14 lg:top-0 z-30 border-b border-border bg-background/80 px-4 py-3 backdrop-blur">
+        <h1 className="sr-only">Search</h1>
         <SearchBar defaultValue={query} />
       </div>
 
@@ -39,7 +40,7 @@ export default async function SearchPage({
         </div>
       ) : (
         <>
-          <nav className="flex border-b border-border">
+          <nav aria-label="Search results" className="flex border-b border-border">
             <Link
               href={`/search?q=${encodeURIComponent(query)}&tab=people`}
               className={cn(

@@ -33,6 +33,26 @@ export function Feed({
     );
   }, []);
 
+  // Merge server refreshes (e.g. after posting from the compose modal, which
+  // calls router.refresh()) into state, without dropping optimistic/realtime
+  // additions. New server posts are added by id; existing ones are untouched.
+  React.useEffect(() => {
+    setPosts((prev) => {
+      const byId = new Map(prev.map((p) => [p.id, p]));
+      let added = false;
+      for (const p of initialPosts) {
+        if (!byId.has(p.id)) {
+          byId.set(p.id, p);
+          added = true;
+        }
+      }
+      if (!added) return prev;
+      return Array.from(byId.values()).sort((a, b) =>
+        a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0
+      );
+    });
+  }, [initialPosts]);
+
   // Realtime: stream new posts from relevant authors into the feed.
   React.useEffect(() => {
     const channel = supabase
