@@ -66,6 +66,26 @@ export async function sendMessage(input: {
   return { messageId: data.id };
 }
 
+/** Recipient marks others' undelivered messages in a conversation as delivered. */
+export async function markConversationDelivered(
+  conversationId: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("messages")
+    .update({ status: "delivered" })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", user.id)
+    .eq("status", "sent");
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function markConversationRead(
   conversationId: string
 ): Promise<{ error?: string }> {

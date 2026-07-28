@@ -94,11 +94,14 @@ export type ConversationParticipant = {
   last_read_at: string;
 };
 
+export type MessageStatus = "sent" | "delivered";
+
 export type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
   content: string;
+  status: MessageStatus;
   created_at: string;
 };
 
@@ -231,9 +234,10 @@ export type Database = {
           conversation_id: string;
           sender_id: string;
           content: string;
+          status?: MessageStatus;
           created_at?: string;
         };
-        Update: Partial<Pick<Message, "content">>;
+        Update: Partial<Pick<Message, "status">>;
         Relationships: [];
       };
     };

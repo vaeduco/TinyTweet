@@ -29,7 +29,11 @@ import type {
   MessageWithSender,
   Profile,
 } from "@/lib/types";
-import { addParticipants, sendMessage } from "@/app/actions/messages";
+import {
+  addParticipants,
+  markConversationDelivered,
+  sendMessage,
+} from "@/app/actions/messages";
 
 export function ThreadView({
   conversation,
@@ -54,6 +58,7 @@ export function ThreadView({
   const [sending, setSending] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const initialScrollRef = React.useRef(true);
+  const lastMsgIdRef = React.useRef<string | null>(null);
 
   const others = participants.filter((p) => p.id !== currentUserId);
   const display = conversationDisplay(conversation, others, participants);
@@ -64,9 +69,21 @@ export function ThreadView({
     return m;
   }, [participants]);
 
+  // Index of the viewer's most recent own message — the only place a status
+  // label is shown (keeps the thread uncluttered).
+  const lastOwnIndex = React.useMemo(() => {
+    let idx = -1;
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].sender_id === currentUserId) idx = i;
+    }
+    return idx;
+  }, [messages, currentUserId]);
+
   React.useEffect(() => {
     setActiveConversation(conversation.id);
     markRead(conversation.id);
+    // Opening the conversation delivers any messages that arrived earlier.
+    void markConversationDelivered(conversation.id);
     return () => setActiveConversation(null);
   }, [conversation.id, setActiveConversation, markRead]);
 
@@ -102,6 +119,21 @@ export function ThreadView({
           // conversation on incoming messages — no need to double-write here.
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversation.id}`,
+        },
+        (payload) => {
+          const row = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === row.id ? { ...m, status: row.status } : m))
+          );
+        }
+      )
       .subscribe((status) => {
         if (status !== "SUBSCRIBED") return;
         // Reconcile on (re)subscribe to backfill anything missed during a
@@ -110,10 +142,13 @@ export function ThreadView({
           const fresh = await getMessages(supabase, conversation.id);
           setMessages((prev) => {
             const byId = new Map(prev.map((m) => [m.id, m]));
-            for (const m of fresh) if (!byId.has(m.id)) byId.set(m.id, m);
-            return Array.from(byId.values()).sort((a, b) =>
-              a.created_at.localeCompare(b.created_at)
-            );
+            // Fresh server rows win for known ids (canonical status + created_at
+            // + sender); prev-only optimistic rows are retained.
+            for (const m of fresh) byId.set(m.id, m);
+            return Array.from(byId.values()).sort((a, b) => {
+              const c = a.created_at.localeCompare(b.created_at);
+              return c !== 0 ? c : a.id.localeCompare(b.id);
+            });
           });
         })();
       });
@@ -126,6 +161,12 @@ export function ThreadView({
   // history. Always scroll on first mount and after the viewer's own send.
   React.useEffect(() => {
     const last = messages[messages.length - 1];
+    const appended = !!last && last.id !== lastMsgIdRef.current;
+    lastMsgIdRef.current = last?.id ?? null;
+    // Ignore in-place changes (e.g. a sent→delivered status flip) so a
+    // scrolled-up reader isn't yanked to the bottom.
+    if (!initialScrollRef.current && !appended) return;
+
     const mine = !!last && last.sender_id === currentUserId;
     const nearBottom =
       window.innerHeight + window.scrollY >=
@@ -166,6 +207,7 @@ export function ThreadView({
                 conversation_id: conversation.id,
                 sender_id: currentUserId,
                 content: text,
+                status: "sent",
                 created_at: new Date().toISOString(),
                 sender:
                   me ??
@@ -254,14 +296,17 @@ export function ThreadView({
                   >
                     {m.content}
                   </div>
-                  <p
-                    className={cn(
-                      "mt-0.5 px-1 text-[11px] text-muted-foreground",
-                      mine && "text-right"
-                    )}
-                  >
-                    {formatRelativeTime(m.created_at)}
-                  </p>
+                  {mine ? (
+                    i === lastOwnIndex ? (
+                      <p className="mt-0.5 px-1 text-right text-[11px] text-muted-foreground">
+                        {m.status === "delivered" ? "Delivered" : "Sent"}
+                      </p>
+                    ) : null
+                  ) : (
+                    <p className="mt-0.5 px-1 text-[11px] text-muted-foreground">
+                      {formatRelativeTime(m.created_at)}
+                    </p>
+                  )}
                 </div>
               </div>
             );

@@ -3,7 +3,10 @@
 import * as React from "react";
 
 import { createClient } from "@/lib/supabase/client";
-import { markConversationRead } from "@/app/actions/messages";
+import {
+  markConversationDelivered,
+  markConversationRead,
+} from "@/app/actions/messages";
 import type { Message } from "@/lib/types";
 
 type MessagesContextValue = {
@@ -82,6 +85,8 @@ export function MessagesProvider({
         (payload) => {
           const row = payload.new as Message;
           if (row.sender_id === userId) return; // my own message
+          // My client received it → mark it delivered for the sender.
+          void markConversationDelivered(row.conversation_id);
           if (row.conversation_id === activeRef.current) {
             // I'm currently viewing it — keep it read.
             void markConversationRead(row.conversation_id);
