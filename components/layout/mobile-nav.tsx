@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LogOut, PenSquare, Search, User as UserIcon } from "lucide-react";
+import { Home, LogOut, Search, User as UserIcon } from "lucide-react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,8 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ComposeDialog } from "@/components/layout/compose-dialog";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NotificationsNavItem } from "@/components/notifications/notifications-nav-item";
 import { MessagesNavItem } from "@/components/messages/messages-nav-item";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
@@ -69,7 +68,7 @@ export function MobileTopBar({ profile }: { profile: Profile | null }) {
       </Link>
 
       <div className="flex flex-1 items-center justify-end gap-1">
-        {profile && <NotificationBell variant="icon" />}
+        {profile && <NotificationsNavItem variant="icon" />}
         <ThemeToggle />
       </div>
     </header>
@@ -82,22 +81,6 @@ export function MobileBottomNav({ profile }: { profile: Profile | null }) {
 
   return (
     <>
-      {profile && !pathname.startsWith("/messages") && (
-        <div className="fixed bottom-20 right-4 z-40 lg:hidden">
-          <ComposeDialog
-            profile={profile}
-            trigger={
-              <Button
-                className="h-14 w-14 rounded-full p-0 shadow-lg"
-                aria-label="Post"
-              >
-                <PenSquare className="h-6 w-6" />
-              </Button>
-            }
-          />
-        </div>
-      )}
-
       <nav
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden"

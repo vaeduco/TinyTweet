@@ -22,8 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ComposeDialog } from "@/components/layout/compose-dialog";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NotificationsNavItem } from "@/components/notifications/notifications-nav-item";
 import { MessagesNavItem } from "@/components/messages/messages-nav-item";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
@@ -103,7 +102,7 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
           icon={Search}
           active={isActive("/search")}
         />
-        {profile && <NotificationBell variant="rail" />}
+        {profile && <NotificationsNavItem variant="rail" />}
         {profile && <MessagesNavItem variant="rail" />}
         {profile && (
           <NavRow
@@ -114,38 +113,23 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
           />
         )}
 
-        <div className="mt-3 xl:w-full">
-          {profile ? (
-            <ComposeDialog
-              profile={profile}
-              trigger={
-                <Button
-                  className="h-12 w-12 p-0 xl:h-[52px] xl:w-full xl:px-6"
-                  aria-label="Post"
-                >
-                  <PenSquare className="h-5 w-5 xl:hidden" />
-                  <span className="hidden text-base xl:inline">Post</span>
-                </Button>
-              }
-            />
-          ) : (
-            <div className="flex w-full flex-col gap-2">
-              <Button asChild className="h-11 w-11 p-0 xl:w-full xl:px-6">
-                <Link href="/signup" aria-label="Sign up">
-                  <PenSquare className="h-5 w-5 xl:hidden" />
-                  <span className="hidden xl:inline">Sign up</span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="hidden xl:inline-flex xl:w-full"
-              >
-                <Link href="/login">Log in</Link>
-              </Button>
-            </div>
-          )}
-        </div>
+        {!profile && (
+          <div className="mt-3 flex w-full flex-col gap-2 xl:w-full">
+            <Button asChild className="h-11 w-11 p-0 xl:w-full xl:px-6">
+              <Link href="/signup" aria-label="Sign up">
+                <PenSquare className="h-5 w-5 xl:hidden" />
+                <span className="hidden xl:inline">Sign up</span>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="hidden xl:inline-flex xl:w-full"
+            >
+              <Link href="/login">Log in</Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-1 xl:items-stretch">
