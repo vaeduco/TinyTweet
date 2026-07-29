@@ -16,7 +16,9 @@ type GiphyItem = {
  */
 export async function GET(request: Request) {
   const noStore = { "Cache-Control": "no-store" };
-  const key = process.env.GIPHY_API_KEY;
+  // Be forgiving about how the env var was pasted (dashboards often add a
+  // trailing newline or wrapping quotes, which GIPHY then rejects as 401).
+  const key = process.env.GIPHY_API_KEY?.trim().replace(/^["']+|["']+$/g, "");
   if (!key) {
     return NextResponse.json(
       {
