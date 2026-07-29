@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Attachment } from "@/components/media/attachment";
 import { renderContent } from "@/lib/parse";
 import { formatRelativeTime } from "@/lib/format";
 import type { ReplyWithAuthor } from "@/lib/types";
@@ -110,9 +111,21 @@ export function ReplyCard({
           )}
         </div>
 
-        <div className="mt-1 whitespace-pre-wrap break-anywhere text-[15px] leading-normal">
-          {renderContent(reply.content)}
-        </div>
+        {reply.content && (
+          <div className="mt-1 whitespace-pre-wrap break-anywhere text-[15px] leading-normal">
+            {renderContent(reply.content)}
+          </div>
+        )}
+
+        {reply.attachment_url && reply.attachment_type && (
+          <div className="mt-3">
+            <Attachment
+              url={reply.attachment_url}
+              type={reply.attachment_type}
+              imgClassName="max-h-[512px]"
+            />
+          </div>
+        )}
       </div>
     </article>
   );

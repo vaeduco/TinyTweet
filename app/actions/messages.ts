@@ -34,10 +34,18 @@ export async function createConversation(input: {
 export async function sendMessage(input: {
   conversationId: string;
   content: string;
+  attachmentUrl?: string | null;
+  attachmentType?: "image" | "gif" | "audio" | null;
+  durationSeconds?: number | null;
 }): Promise<{ error?: string; messageId?: string }> {
   const content = (input.content ?? "").trim();
-  if (!content) return { error: "Message can't be empty." };
+  const hasAttachment = !!input.attachmentUrl;
+  if (!content && !hasAttachment) return { error: "Message can't be empty." };
   if (content.length > 2000) return { error: "Message is too long." };
+  // Only allow https attachment URLs (blocks javascript:/data: XSS via href).
+  if (hasAttachment && !/^https:\/\//i.test(input.attachmentUrl ?? "")) {
+    return { error: "Invalid attachment." };
+  }
 
   const supabase = await createClient();
   const {
@@ -51,6 +59,10 @@ export async function sendMessage(input: {
       conversation_id: input.conversationId,
       sender_id: user.id,
       content,
+      attachment_url: input.attachmentUrl ?? null,
+      attachment_type: hasAttachment ? input.attachmentType ?? null : null,
+      duration_seconds:
+        input.attachmentType === "audio" ? input.durationSeconds ?? null : null,
     })
     .select("id")
     .single();
@@ -64,6 +76,31 @@ export async function sendMessage(input: {
     .eq("user_id", user.id);
 
   return { messageId: data.id };
+}
+
+/** Unsend (soft-delete) your own message. Guard trigger enforces sender-only. */
+export async function unsendMessage(
+  messageId: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("messages")
+    .update({
+      deleted_at: new Date().toISOString(),
+      content: "Message unsent",
+      attachment_url: null,
+      attachment_type: null,
+      duration_seconds: null,
+    })
+    .eq("id", messageId)
+    .eq("sender_id", user.id);
+  if (error) return { error: error.message };
+  return {};
 }
 
 /** Recipient marks others' undelivered messages in a conversation as delivered. */

@@ -9,6 +9,12 @@ import { toast } from "sonner";
 import { UserAvatar } from "@/components/user-avatar";
 import { ConversationAvatar } from "@/components/messages/conversation-avatar";
 import { PresenceStatus } from "@/components/presence/presence-status";
+import { MessageBubble } from "@/components/messages/message-bubble";
+import { AttachmentToolbar } from "@/components/media/attachment-toolbar";
+import {
+  AttachmentPreview,
+  type ComposerAttachment,
+} from "@/components/media/attachment-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,7 +28,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useMessages } from "@/components/messages/messages-provider";
 import { getMessages } from "@/lib/queries";
 import { conversationDisplay } from "@/lib/conversation";
-import { formatRelativeTime } from "@/lib/format";
+import { MESSAGE_MEDIA_BUCKET } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type {
   Conversation,
@@ -34,6 +40,7 @@ import {
   addParticipants,
   markConversationDelivered,
   sendMessage,
+  unsendMessage,
 } from "@/app/actions/messages";
 
 export function ThreadView({
@@ -56,6 +63,10 @@ export function ThreadView({
   const [messages, setMessages] =
     React.useState<MessageWithSender[]>(initialMessages);
   const [content, setContent] = React.useState("");
+  const [attachment, setAttachment] = React.useState<ComposerAttachment | null>(
+    null
+  );
+  const [toolbarBusy, setToolbarBusy] = React.useState(false);
   const [sending, setSending] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const initialScrollRef = React.useRef(true);
@@ -130,8 +141,10 @@ export function ThreadView({
         },
         (payload) => {
           const row = payload.new as Message;
+          // Merge the whole row so status flips AND unsends (deleted_at +
+          // blanked content/attachment) both propagate live. sender is kept.
           setMessages((prev) =>
-            prev.map((m) => (m.id === row.id ? { ...m, status: row.status } : m))
+            prev.map((m) => (m.id === row.id ? { ...m, ...row } : m))
           );
         }
       )
@@ -184,16 +197,24 @@ export function ThreadView({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const text = content.trim();
-    if (!text || sending) return;
+    const att = attachment;
+    if ((!text && !att) || sending || toolbarBusy) return;
     setSending(true);
 
-    const res = await sendMessage({ conversationId: conversation.id, content: text });
+    const res = await sendMessage({
+      conversationId: conversation.id,
+      content: text,
+      attachmentUrl: att?.url ?? null,
+      attachmentType: att?.type ?? null,
+      durationSeconds: att?.durationSeconds ?? null,
+    });
     if (res.error) {
       toast.error(res.error);
       setSending(false);
       return;
     }
     setContent("");
+    setAttachment(null);
     setSending(false);
 
     if (res.messageId) {
@@ -209,6 +230,10 @@ export function ThreadView({
                 sender_id: currentUserId,
                 content: text,
                 status: "sent",
+                attachment_url: att?.url ?? null,
+                attachment_type: att?.type ?? null,
+                duration_seconds: att?.durationSeconds ?? null,
+                deleted_at: null,
                 created_at: new Date().toISOString(),
                 sender:
                   me ??
@@ -225,6 +250,42 @@ export function ThreadView({
               },
             ]
       );
+    }
+  }
+
+  async function handleUnsend(id: string) {
+    // Optimistically unsend, remembering the previous row so we can revert if
+    // the server rejects/fails — otherwise the sender sees a false "unsent"
+    // while the message is still live for the recipient, with no retry.
+    let prev: MessageWithSender | undefined;
+    setMessages((cur) =>
+      cur.map((m) => {
+        if (m.id !== id) return m;
+        prev = m;
+        return {
+          ...m,
+          deleted_at: new Date().toISOString(),
+          content: "Message unsent",
+          attachment_url: null,
+          attachment_type: null,
+          duration_seconds: null,
+        };
+      })
+    );
+
+    const revert = () => {
+      if (prev) setMessages((cur) => cur.map((m) => (m.id === id ? prev! : m)));
+    };
+
+    try {
+      const res = await unsendMessage(id);
+      if (res.error) {
+        toast.error(res.error);
+        revert();
+      }
+    } catch {
+      toast.error("Couldn't unsend the message. Please try again.");
+      revert();
     }
   }
 
@@ -282,44 +343,14 @@ export function ThreadView({
               !mine &&
               (i === 0 || messages[i - 1].sender_id !== m.sender_id);
             return (
-              <div
+              <MessageBubble
                 key={m.id}
-                className={cn("flex items-end gap-2 py-0.5", mine && "flex-row-reverse")}
-              >
-                {!mine ? (
-                  <UserAvatar profile={m.sender} className="h-7 w-7 shrink-0" />
-                ) : (
-                  <span className="w-7 shrink-0" />
-                )}
-                <div className="max-w-[78%]">
-                  {showName && (
-                    <p className="mb-0.5 px-1 text-xs text-muted-foreground">
-                      {m.sender.display_name || m.sender.username}
-                    </p>
-                  )}
-                  <div
-                    className={cn(
-                      "whitespace-pre-wrap break-anywhere rounded-2xl px-3.5 py-2 text-[15px] leading-snug",
-                      mine
-                        ? "rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-bl-md bg-muted text-foreground"
-                    )}
-                  >
-                    {m.content}
-                  </div>
-                  {mine ? (
-                    i === lastOwnIndex ? (
-                      <p className="mt-0.5 px-1 text-right text-[11px] text-muted-foreground">
-                        {m.status === "delivered" ? "Delivered" : "Sent"}
-                      </p>
-                    ) : null
-                  ) : (
-                    <p className="mt-0.5 px-1 text-[11px] text-muted-foreground">
-                      {formatRelativeTime(m.created_at)}
-                    </p>
-                  )}
-                </div>
-              </div>
+                message={m}
+                mine={mine}
+                showName={showName}
+                isLastOwn={i === lastOwnIndex}
+                onUnsend={handleUnsend}
+              />
             );
           })
         )}
@@ -329,30 +360,46 @@ export function ThreadView({
       {/* Composer */}
       <form
         onSubmit={onSubmit}
-        className="sticky bottom-16 z-20 flex items-center gap-2 border-t border-border bg-background/95 p-3 backdrop-blur lg:bottom-0"
+        className="sticky bottom-16 z-20 border-t border-border bg-background/95 p-3 backdrop-blur lg:bottom-0"
       >
-        <Input
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Start a message"
-          aria-label="Message"
-          className="rounded-full bg-muted focus-visible:bg-background"
-          maxLength={2000}
-          autoFocus
-        />
-        <Button
-          type="submit"
-          size="icon"
-          className="shrink-0"
-          disabled={!content.trim() || sending}
-          aria-label="Send message"
-        >
-          {sending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <SendHorizontal className="h-4 w-4" />
-          )}
-        </Button>
+        {attachment && (
+          <AttachmentPreview
+            attachment={attachment}
+            onRemove={() => setAttachment(null)}
+          />
+        )}
+        <div className="flex items-end gap-1">
+          <AttachmentToolbar
+            userId={currentUserId}
+            bucket={MESSAGE_MEDIA_BUCKET}
+            includeAudio
+            onEmoji={(emoji) => setContent((c) => c + emoji)}
+            onAttachment={(att) => setAttachment(att)}
+            onBusyChange={setToolbarBusy}
+            disabled={sending}
+          />
+          <Input
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Start a message"
+            aria-label="Message"
+            className="rounded-full bg-muted focus-visible:bg-background"
+            maxLength={2000}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="shrink-0"
+            disabled={(!content.trim() && !attachment) || sending || toolbarBusy}
+            aria-label="Send message"
+          >
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <SendHorizontal className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </form>
     </div>
   );

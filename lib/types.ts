@@ -22,12 +22,16 @@ export type Post = {
   created_at: string;
 };
 
+export type ReplyAttachmentType = "image" | "gif";
+
 export type Reply = {
   id: string;
   post_id: string;
   user_id: string;
   content: string;
   parent_reply_id: string | null;
+  attachment_url: string | null;
+  attachment_type: ReplyAttachmentType | null;
   created_at: string;
 };
 
@@ -102,12 +106,18 @@ export type ConversationParticipant = {
 
 export type MessageStatus = "sent" | "delivered";
 
+export type MessageAttachmentType = "image" | "gif" | "audio";
+
 export type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
   content: string;
   status: MessageStatus;
+  attachment_url: string | null;
+  attachment_type: MessageAttachmentType | null;
+  duration_seconds: number | null;
+  deleted_at: string | null;
   created_at: string;
 };
 
@@ -177,6 +187,8 @@ export type Database = {
           user_id: string;
           content: string;
           parent_reply_id?: string | null;
+          attachment_url?: string | null;
+          attachment_type?: ReplyAttachmentType | null;
           created_at?: string;
         };
         Update: Partial<Pick<Reply, "content">>;
@@ -262,9 +274,22 @@ export type Database = {
           sender_id: string;
           content: string;
           status?: MessageStatus;
+          attachment_url?: string | null;
+          attachment_type?: MessageAttachmentType | null;
+          duration_seconds?: number | null;
           created_at?: string;
         };
-        Update: Partial<Pick<Message, "status">>;
+        Update: Partial<
+          Pick<
+            Message,
+            | "status"
+            | "content"
+            | "deleted_at"
+            | "attachment_url"
+            | "attachment_type"
+            | "duration_seconds"
+          >
+        >;
         Relationships: [];
       };
     };

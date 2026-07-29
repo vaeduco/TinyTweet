@@ -10,12 +10,19 @@ export async function createReply(input: {
   postId: string;
   content: string;
   parentReplyId?: string | null;
+  attachmentUrl?: string | null;
+  attachmentType?: "image" | "gif" | null;
 }): Promise<CreateReplyResult> {
   const content = (input.content ?? "").trim();
+  const hasAttachment = !!input.attachmentUrl;
 
-  if (!content) return { error: "Your reply can't be empty." };
+  if (!content && !hasAttachment) return { error: "Your reply can't be empty." };
   if (content.length > MAX_POST_LENGTH) {
     return { error: `Replies are limited to ${MAX_POST_LENGTH} characters.` };
+  }
+  // Only allow https attachment URLs (blocks javascript:/data: XSS via href).
+  if (hasAttachment && !/^https:\/\//i.test(input.attachmentUrl ?? "")) {
+    return { error: "Invalid attachment." };
   }
 
   const supabase = await createClient();
@@ -31,6 +38,8 @@ export async function createReply(input: {
       user_id: user.id,
       content,
       parent_reply_id: input.parentReplyId ?? null,
+      attachment_url: input.attachmentUrl ?? null,
+      attachment_type: hasAttachment ? input.attachmentType ?? null : null,
     })
     .select("id")
     .single();
