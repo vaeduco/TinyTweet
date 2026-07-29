@@ -22,7 +22,7 @@ export type Post = {
   created_at: string;
 };
 
-export type ReplyAttachmentType = "image" | "gif";
+export type ReplyAttachmentType = "image";
 
 export type Reply = {
   id: string;
@@ -106,7 +106,7 @@ export type ConversationParticipant = {
 
 export type MessageStatus = "sent" | "delivered";
 
-export type MessageAttachmentType = "image" | "gif" | "audio";
+export type MessageAttachmentType = "image" | "audio";
 
 export type Message = {
   id: string;

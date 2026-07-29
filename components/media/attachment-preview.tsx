@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export type ComposerAttachment = {
   url: string;
-  type: "image" | "gif" | "audio";
+  type: "image" | "audio";
   durationSeconds?: number;
 };
 

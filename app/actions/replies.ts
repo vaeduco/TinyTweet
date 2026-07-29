@@ -11,7 +11,7 @@ export async function createReply(input: {
   content: string;
   parentReplyId?: string | null;
   attachmentUrl?: string | null;
-  attachmentType?: "image" | "gif" | null;
+  attachmentType?: "image" | null;
 }): Promise<CreateReplyResult> {
   const content = (input.content ?? "").trim();
   const hasAttachment = !!input.attachmentUrl;

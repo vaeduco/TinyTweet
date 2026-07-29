@@ -8,13 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadToBucket } from "@/lib/upload";
 import { EmojiPickerButton } from "@/components/media/emoji-picker-button";
 import { ImageUploadButton } from "@/components/media/image-upload-button";
-import { GifPickerButton } from "@/components/media/gif-picker-button";
 import { AudioRecorderButton } from "@/components/media/audio-recorder-button";
 import type { ComposerAttachment } from "@/components/media/attachment-preview";
 
 /**
- * Emoji / image / GIF (and optionally audio) buttons for a composer. Handles
- * the storage upload for images and audio; GIFs are already remote URLs.
+ * Emoji / image (and optionally audio) buttons for a composer. Handles the
+ * storage upload for images and audio.
  */
 export function AttachmentToolbar({
   userId,
@@ -69,10 +68,6 @@ export function AttachmentToolbar({
       <EmojiPickerButton onEmoji={onEmoji} disabled={disabled || busy} />
       <ImageUploadButton
         onPick={(f) => handleFile(f, "image")}
-        disabled={disabled || busy}
-      />
-      <GifPickerButton
-        onSelect={(url) => onAttachment({ url, type: "gif" })}
         disabled={disabled || busy}
       />
       {includeAudio && (

@@ -35,7 +35,7 @@ export async function sendMessage(input: {
   conversationId: string;
   content: string;
   attachmentUrl?: string | null;
-  attachmentType?: "image" | "gif" | "audio" | null;
+  attachmentType?: "image" | "audio" | null;
   durationSeconds?: number | null;
 }): Promise<{ error?: string; messageId?: string }> {
   const content = (input.content ?? "").trim();

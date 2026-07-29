@@ -4,7 +4,7 @@ import { AudioPlayer } from "@/components/media/audio-player";
 import { cn } from "@/lib/utils";
 import type { MessageAttachmentType } from "@/lib/types";
 
-/** Renders a stored attachment (image / gif / audio). */
+/** Renders a stored attachment (image / audio). */
 export function Attachment({
   url,
   type,
@@ -33,7 +33,7 @@ export function Attachment({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={url}
-      alt={type === "gif" ? "GIF attachment" : "Image attachment"}
+      alt="Image attachment"
       className={cn("w-full object-cover", imgClassName)}
       loading="lazy"
     />
