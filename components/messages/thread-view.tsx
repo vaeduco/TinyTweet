@@ -360,7 +360,7 @@ export function ThreadView({
       {/* Composer */}
       <form
         onSubmit={onSubmit}
-        className="sticky bottom-16 z-20 border-t border-border bg-background/95 p-3 backdrop-blur lg:bottom-0"
+        className="sticky bottom-16 z-20 bg-background/95 p-3 backdrop-blur lg:bottom-0"
       >
         {attachment && (
           <AttachmentPreview
