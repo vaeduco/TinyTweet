@@ -122,7 +122,9 @@ export function GifPickerButton({
                   aria-label={`Send ${g.title}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={g.preview} alt={g.title} className="w-full" loading="lazy" />
+                  {/* eager: a small, user-opened grid; lazy-loading inside the
+                      scrollable popover leaves thumbnails blank. */}
+                  <img src={g.preview} alt={g.title} className="w-full" />
                 </button>
               ))}
             </div>
