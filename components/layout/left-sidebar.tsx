@@ -83,7 +83,7 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
   return (
     <nav
       aria-label="Primary"
-      className="sticky top-0 hidden h-screen shrink-0 flex-col justify-between overflow-y-auto px-2 py-3 lg:flex lg:w-[88px] xl:w-[275px]"
+      className="sticky top-0 hidden h-dvh shrink-0 flex-col justify-between overflow-y-auto px-2 py-3 lg:flex lg:w-[88px] xl:w-[275px]"
     >
       <div className="flex flex-col items-center gap-1 xl:items-stretch">
         <Link

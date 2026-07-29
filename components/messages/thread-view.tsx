@@ -292,7 +292,7 @@ export function ThreadView({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-14 z-20 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-2.5 backdrop-blur lg:top-0">
+      <div className="sticky top-14 z-20 flex items-center gap-3 border-b border-border bg-background px-4 py-2.5 lg:top-0">
         <Link
           href="/messages"
           className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -360,7 +360,7 @@ export function ThreadView({
       {/* Composer */}
       <form
         onSubmit={onSubmit}
-        className="sticky bottom-16 z-20 bg-background/95 p-3 backdrop-blur lg:bottom-0"
+        className="sticky bottom-16 z-20 bg-background p-3 lg:bottom-0"
       >
         {attachment && (
           <AttachmentPreview

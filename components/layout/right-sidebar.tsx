@@ -17,7 +17,7 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
   return (
     <aside
       aria-label="Trending and suggestions"
-      className="sticky top-0 hidden h-screen w-[350px] shrink-0 flex-col gap-4 overflow-y-auto py-3 pl-6 xl:flex"
+      className="sticky top-0 hidden h-dvh w-[350px] shrink-0 flex-col gap-4 overflow-y-auto py-3 pl-6 xl:flex"
     >
       <SearchBar />
 
@@ -102,7 +102,7 @@ export function RightSidebarSkeleton() {
   return (
     <aside
       aria-hidden="true"
-      className="sticky top-0 hidden h-screen w-[350px] shrink-0 flex-col gap-4 py-3 pl-6 xl:flex"
+      className="sticky top-0 hidden h-dvh w-[350px] shrink-0 flex-col gap-4 py-3 pl-6 xl:flex"
     >
       <div className="h-10 w-full animate-pulse rounded-full bg-muted" />
       <div className="h-44 w-full animate-pulse rounded-2xl bg-muted" />

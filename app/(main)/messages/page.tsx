@@ -21,7 +21,7 @@ export default async function MessagesPage() {
 
   return (
     <div>
-      <div className="sticky top-14 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur lg:top-0">
+      <div className="sticky top-14 z-30 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:top-0">
         <h1 className="text-xl font-bold">Messages</h1>
         <Button asChild size="sm">
           <Link href="/messages/new">

@@ -25,7 +25,7 @@ import type { Profile } from "@/lib/types";
 /** Sticky top bar for phones/tablets (hidden once the left sidebar appears). */
 export function MobileTopBar({ profile }: { profile: Profile | null }) {
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur lg:hidden">
+    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4 lg:hidden">
       <div className="flex flex-1 items-center justify-start">
         {profile ? (
           <DropdownMenu>
@@ -83,7 +83,7 @@ export function MobileBottomNav({ profile }: { profile: Profile | null }) {
     <>
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background lg:hidden"
       >
         <div className="mx-auto flex max-w-md items-center justify-around">
           <BottomLink href="/" label="Home" icon={Home} active={pathname === "/"} />
