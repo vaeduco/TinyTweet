@@ -39,7 +39,9 @@ export function GifPickerButton({
     const t = setTimeout(
       async () => {
         try {
-          const res = await fetch(`/api/gifs?q=${encodeURIComponent(query)}`);
+          const res = await fetch(`/api/gifs?q=${encodeURIComponent(query)}`, {
+            cache: "no-store",
+          });
           const json = await res.json();
           if (!active) return;
           if (!res.ok) {

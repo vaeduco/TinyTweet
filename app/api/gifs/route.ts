@@ -15,6 +15,7 @@ type GiphyItem = {
  * https://developers.giphy.com). Returns 503 until it is set.
  */
 export async function GET(request: Request) {
+  const noStore = { "Cache-Control": "no-store" };
   const key = process.env.GIPHY_API_KEY;
   if (!key) {
     return NextResponse.json(
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
         error:
           "GIF search isn't configured. Add GIPHY_API_KEY to .env.local (from developers.giphy.com) and restart the dev server.",
       },
-      { status: 503 }
+      { status: 503, headers: noStore }
     );
   }
 
@@ -65,5 +66,5 @@ export async function GET(request: Request) {
     })
     .filter((g): g is typeof g & { url: string } => Boolean(g.url));
 
-  return NextResponse.json({ gifs });
+  return NextResponse.json({ gifs }, { headers: noStore });
 }
