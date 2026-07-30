@@ -16,7 +16,6 @@ import {
   type ComposerAttachment,
 } from "@/components/media/attachment-preview";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -71,6 +70,7 @@ export function ThreadView({
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const initialScrollRef = React.useRef(true);
   const lastMsgIdRef = React.useRef<string | null>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const others = participants.filter((p) => p.id !== currentUserId);
   const display = conversationDisplay(conversation, others, participants);
@@ -194,8 +194,25 @@ export function ThreadView({
     }
   }, [messages, currentUserId]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Auto-grow the composer as the message wraps, capped so it scrolls
+  // internally past the max height (~5 lines).
+  React.useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+  }, [content]);
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter sends; Shift+Enter inserts a newline. Ignore Enter during IME
+    // composition so it doesn't cut off e.g. CJK input.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      void send();
+    }
+  }
+
+  async function send() {
     const text = content.trim();
     const att = attachment;
     if ((!text && !att) || sending || toolbarBusy) return;
@@ -357,11 +374,9 @@ export function ThreadView({
         <div ref={bottomRef} />
       </div>
 
-      {/* Composer */}
-      <form
-        onSubmit={onSubmit}
-        className="sticky bottom-16 z-20 bg-background p-3 lg:bottom-0"
-      >
+      {/* Composer — deliberately NOT a <form>: a single-field form makes iOS
+          Safari show prev/next field-navigation arrows above the keyboard. */}
+      <div className="sticky bottom-16 z-20 bg-background p-3 lg:bottom-0">
         {attachment && (
           <AttachmentPreview
             attachment={attachment}
@@ -369,25 +384,37 @@ export function ThreadView({
           />
         )}
         <div className="flex items-end gap-1">
-          <AttachmentToolbar
-            userId={currentUserId}
-            bucket={MESSAGE_MEDIA_BUCKET}
-            includeAudio
-            onEmoji={(emoji) => setContent((c) => c + emoji)}
-            onAttachment={(att) => setAttachment(att)}
-            onBusyChange={setToolbarBusy}
-            disabled={sending}
-          />
-          <Input
+          {/* Collapse the icon row while typing so the textarea can grow —
+              but keep it mounted while an upload/recording is in flight, or its
+              busy state would strand toolbarBusy=true and soft-lock Send. */}
+          {(content.length === 0 || toolbarBusy) && (
+            <AttachmentToolbar
+              userId={currentUserId}
+              bucket={MESSAGE_MEDIA_BUCKET}
+              includeAudio
+              onEmoji={(emoji) => setContent((c) => c + emoji)}
+              onAttachment={(att) => setAttachment(att)}
+              onBusyChange={setToolbarBusy}
+              disabled={sending}
+            />
+          )}
+          <textarea
+            ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onKeyDown={onKeyDown}
             placeholder="Start a message"
             aria-label="Message"
-            className="rounded-full bg-muted focus-visible:bg-background"
+            rows={1}
             maxLength={2000}
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="off"
+            className="max-h-[120px] min-h-[40px] min-w-0 flex-1 resize-none overflow-y-auto rounded-2xl bg-muted px-4 py-2 text-[15px] leading-snug outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
           <Button
-            type="submit"
+            type="button"
+            onClick={() => void send()}
             size="icon"
             className="shrink-0"
             disabled={(!content.trim() && !attachment) || sending || toolbarBusy}
@@ -400,7 +427,7 @@ export function ThreadView({
             )}
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
