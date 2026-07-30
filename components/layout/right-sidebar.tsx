@@ -21,7 +21,7 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
     >
       <SearchBar />
 
-      <section className="overflow-hidden rounded-2xl border border-border bg-muted/30">
+      <section className="overflow-hidden rounded-2xl bg-surface-1 shadow-sm">
         <h2 className="px-4 pb-1 pt-3 text-lg font-extrabold">Trending</h2>
         {trends.length === 0 ? (
           <p className="px-4 pb-4 text-sm text-muted-foreground">
@@ -49,7 +49,7 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
         )}
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-border bg-muted/30">
+      <section className="overflow-hidden rounded-2xl bg-surface-1 shadow-sm">
         <h2 className="px-4 pb-1 pt-3 text-lg font-extrabold">Who to follow</h2>
         {suggestions.length === 0 ? (
           <p className="px-4 pb-4 text-sm text-muted-foreground">

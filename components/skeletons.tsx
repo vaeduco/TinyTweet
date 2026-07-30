@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PostSkeleton() {
   return (
-    <div className="flex gap-3 border-b border-border px-4 py-3">
+    <div className="flex gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2.5 shadow-sm">
       <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
       <div className="flex-1 space-y-2.5 py-1">
         <div className="flex items-center gap-2">
@@ -23,7 +23,7 @@ export function PostSkeleton() {
 
 export function FeedSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div aria-hidden="true">
+    <div aria-hidden="true" className="flex flex-col gap-2 p-2">
       {Array.from({ length: count }).map((_, i) => (
         <PostSkeleton key={i} />
       ))}
