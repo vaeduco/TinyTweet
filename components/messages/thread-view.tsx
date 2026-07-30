@@ -407,6 +407,21 @@ export function ThreadView({
               )}
             />
           </Button>
+          {/* Attachment icons revealed INLINE beside the "+" when expanded; the
+              textarea (min-w-0 flex-1) shrinks to make room, same row. Kept
+              mounted while an upload/recording is in flight so its busy state
+              can't strand toolbarBusy=true and soft-lock Send. */}
+          {(expanded || toolbarBusy) && (
+            <AttachmentToolbar
+              userId={currentUserId}
+              bucket={MESSAGE_MEDIA_BUCKET}
+              includeAudio
+              onEmoji={(emoji) => setContent((c) => c + emoji)}
+              onAttachment={(att) => setAttachment(att)}
+              onBusyChange={setToolbarBusy}
+              disabled={sending}
+            />
+          )}
           <textarea
             ref={textareaRef}
             value={content}
@@ -436,23 +451,6 @@ export function ThreadView({
             )}
           </Button>
         </div>
-
-        {/* Attachment icons revealed below the input when "+" is expanded;
-            kept mounted while an upload/recording is in flight so its busy
-            state can't strand toolbarBusy=true and soft-lock Send. */}
-        {(expanded || toolbarBusy) && (
-          <div className="mt-2 pl-1">
-            <AttachmentToolbar
-              userId={currentUserId}
-              bucket={MESSAGE_MEDIA_BUCKET}
-              includeAudio
-              onEmoji={(emoji) => setContent((c) => c + emoji)}
-              onAttachment={(att) => setAttachment(att)}
-              onBusyChange={setToolbarBusy}
-              disabled={sending}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
