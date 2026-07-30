@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, SendHorizontal, UserPlus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, SendHorizontal, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/user-avatar";
@@ -66,6 +66,7 @@ export function ThreadView({
     null
   );
   const [toolbarBusy, setToolbarBusy] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
   const [sending, setSending] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const initialScrollRef = React.useRef(true);
@@ -232,6 +233,7 @@ export function ThreadView({
     }
     setContent("");
     setAttachment(null);
+    setExpanded(false);
     setSending(false);
 
     if (res.messageId) {
@@ -384,20 +386,27 @@ export function ThreadView({
           />
         )}
         <div className="flex items-end gap-1">
-          {/* Collapse the icon row while typing so the textarea can grow —
-              but keep it mounted while an upload/recording is in flight, or its
-              busy state would strand toolbarBusy=true and soft-lock Send. */}
-          {(content.length === 0 || toolbarBusy) && (
-            <AttachmentToolbar
-              userId={currentUserId}
-              bucket={MESSAGE_MEDIA_BUCKET}
-              includeAudio
-              onEmoji={(emoji) => setContent((c) => c + emoji)}
-              onAttachment={(att) => setAttachment(att)}
-              onBusyChange={setToolbarBusy}
-              disabled={sending}
+          {/* iMessage-style toggle: "+" reveals the attachment icons and the
+              plus rotates 45° into an "×"; tapping again (or sending) collapses. */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 text-primary"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={
+              expanded ? "Hide attachment options" : "Show attachment options"
+            }
+            aria-expanded={expanded}
+            disabled={sending}
+          >
+            <Plus
+              className={cn(
+                "h-5 w-5 transition-transform duration-200",
+                expanded && "rotate-45"
+              )}
             />
-          )}
+          </Button>
           <textarea
             ref={textareaRef}
             value={content}
@@ -427,6 +436,23 @@ export function ThreadView({
             )}
           </Button>
         </div>
+
+        {/* Attachment icons revealed below the input when "+" is expanded;
+            kept mounted while an upload/recording is in flight so its busy
+            state can't strand toolbarBusy=true and soft-lock Send. */}
+        {(expanded || toolbarBusy) && (
+          <div className="mt-2 pl-1">
+            <AttachmentToolbar
+              userId={currentUserId}
+              bucket={MESSAGE_MEDIA_BUCKET}
+              includeAudio
+              onEmoji={(emoji) => setContent((c) => c + emoji)}
+              onAttachment={(att) => setAttachment(att)}
+              onBusyChange={setToolbarBusy}
+              disabled={sending}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
