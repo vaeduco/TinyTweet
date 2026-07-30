@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PollCard } from "@/components/poll/poll-card";
 import { renderContent } from "@/lib/parse";
 import { formatRelativeTime, formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -131,7 +132,7 @@ export function PostCard({
   return (
     <article
       className={cn(
-        "flex gap-3 rounded-xl border border-border bg-card px-3.5 py-2.5 transition-colors",
+        "flex gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2 shadow-sm transition-shadow",
         highlight && "ring-1 ring-primary/40"
       )}
     >
@@ -208,6 +209,10 @@ export function PostCard({
               loading="lazy"
             />
           </Link>
+        )}
+
+        {post.poll && (
+          <PollCard poll={post.poll} currentUserId={currentUserId} />
         )}
 
         <div className="mt-2 flex max-w-md items-center justify-between text-muted-foreground">

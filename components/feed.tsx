@@ -5,7 +5,54 @@ import * as React from "react";
 import { PostCard } from "@/components/post-card";
 import { ComposeBox } from "@/components/compose-box";
 import { createClient } from "@/lib/supabase/client";
-import type { Post, PostWithAuthor, Profile } from "@/lib/types";
+import type {
+  Poll,
+  PollOption,
+  PollWithMeta,
+  Post,
+  PostWithAuthor,
+  Profile,
+} from "@/lib/types";
+
+/** Load a streamed-in post's poll (if any) so it renders fully in the feed. */
+async function fetchPollForPost(
+  supabase: ReturnType<typeof createClient>,
+  postId: string,
+  viewerId: string | null
+): Promise<PollWithMeta | null> {
+  const { data: pollRow } = await supabase
+    .from("polls")
+    .select("*")
+    .eq("post_id", postId)
+    .maybeSingle();
+  if (!pollRow) return null;
+  const poll = pollRow as Poll;
+
+  const { data: optRows } = await supabase
+    .from("poll_options")
+    .select("*")
+    .eq("poll_id", poll.id)
+    .order("position", { ascending: true });
+  const options = (optRows ?? []) as PollOption[];
+
+  let myVote: string | null = null;
+  if (viewerId) {
+    const { data: vote } = await supabase
+      .from("poll_votes")
+      .select("option_id")
+      .eq("poll_id", poll.id)
+      .eq("user_id", viewerId)
+      .maybeSingle();
+    myVote = vote?.option_id ?? null;
+  }
+
+  return {
+    ...poll,
+    options,
+    my_vote_option_id: myVote,
+    total_votes: options.reduce((sum, o) => sum + o.vote_count, 0),
+  };
+}
 
 export function Feed({
   initialPosts,
@@ -64,11 +111,10 @@ export function Feed({
           const row = payload.new as Post;
           if (!relevantSet.has(row.user_id)) return;
 
-          const { data: author } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", row.user_id)
-            .single();
+          const [{ data: author }, poll] = await Promise.all([
+            supabase.from("profiles").select("*").eq("id", row.user_id).single(),
+            fetchPollForPost(supabase, row.id, currentUserId),
+          ]);
           if (!author) return;
 
           setPosts((prev) =>
@@ -80,6 +126,7 @@ export function Feed({
                     author: author as Profile,
                     liked_by_me: false,
                     saved_by_me: false,
+                    poll,
                   },
                   ...prev,
                 ]
@@ -100,7 +147,7 @@ export function Feed({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, relevantSet]);
+  }, [supabase, relevantSet, currentUserId]);
 
   return (
     <div>

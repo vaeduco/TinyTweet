@@ -47,6 +47,36 @@ export type SavedPost = {
   created_at: string;
 };
 
+export type Poll = {
+  id: string;
+  post_id: string;
+  ends_at: string;
+  created_at: string;
+};
+
+export type PollOption = {
+  id: string;
+  poll_id: string;
+  text: string;
+  position: number;
+  vote_count: number;
+};
+
+export type PollVote = {
+  poll_id: string;
+  option_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+/** A poll with its options, the viewer's own vote, and the total tally. */
+export type PollWithMeta = Poll & {
+  options: PollOption[];
+  /** The option the viewer voted for, or null if they haven't voted. */
+  my_vote_option_id: string | null;
+  total_votes: number;
+};
+
 export type Follow = {
   follower_id: string;
   following_id: string;
@@ -75,6 +105,8 @@ export type PostWithAuthor = Post & {
   liked_by_me: boolean;
   /** Whether the current viewer has bookmarked this post. */
   saved_by_me: boolean;
+  /** The attached poll, or null if this post has none. */
+  poll: PollWithMeta | null;
 };
 
 /** A reply with its author profile joined in. */
@@ -214,6 +246,40 @@ export type Database = {
         Update: Partial<SavedPost>;
         Relationships: [];
       };
+      polls: {
+        Row: Poll;
+        Insert: {
+          id?: string;
+          post_id: string;
+          ends_at: string;
+          created_at?: string;
+        };
+        Update: Partial<Poll>;
+        Relationships: [];
+      };
+      poll_options: {
+        Row: PollOption;
+        Insert: {
+          id?: string;
+          poll_id: string;
+          text: string;
+          position: number;
+          vote_count?: number;
+        };
+        Update: Partial<PollOption>;
+        Relationships: [];
+      };
+      poll_votes: {
+        Row: PollVote;
+        Insert: {
+          poll_id: string;
+          option_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: Partial<PollVote>;
+        Relationships: [];
+      };
       follows: {
         Row: Follow;
         Insert: {
@@ -337,6 +403,14 @@ export type Database = {
       is_group_conversation: {
         Args: { conv: string };
         Returns: boolean;
+      };
+      create_poll_post: {
+        Args: {
+          p_content: string;
+          p_options: string[];
+          p_duration_minutes: number;
+        };
+        Returns: string;
       };
     };
     Enums: Record<string, never>;

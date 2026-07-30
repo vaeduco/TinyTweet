@@ -35,6 +35,42 @@ export async function createPost(input: {
   return { postId: data.id };
 }
 
+export type CreatePollPostResult = { error?: string; postId?: string };
+
+/** Create a post with an attached poll (2–4 options + a duration). The post,
+ * poll, and options are inserted atomically by the create_poll_post RPC. */
+export async function createPollPost(input: {
+  content: string;
+  options: string[];
+  durationMinutes: number;
+}): Promise<CreatePollPostResult> {
+  const content = (input.content ?? "").trim();
+  if (!content) return { error: "Your post can't be empty." };
+  if (content.length > MAX_POST_LENGTH) {
+    return { error: `Posts are limited to ${MAX_POST_LENGTH} characters.` };
+  }
+
+  const options = input.options.map((o) => o.trim()).filter((o) => o.length > 0);
+  if (options.length < 2) return { error: "A poll needs at least 2 options." };
+  if (options.length > 4) return { error: "A poll can have at most 4 options." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in to post." };
+
+  const { data, error } = await supabase.rpc("create_poll_post", {
+    p_content: content,
+    p_options: options,
+    p_duration_minutes: input.durationMinutes,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  return { postId: data as string };
+}
+
 export async function deletePost(postId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {

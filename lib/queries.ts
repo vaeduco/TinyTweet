@@ -5,6 +5,9 @@ import type {
   Database,
   MessageWithSender,
   NotificationWithActor,
+  Poll,
+  PollOption,
+  PollWithMeta,
   Post,
   PostWithAuthor,
   Profile,
@@ -32,18 +35,80 @@ function sanitizeTerm(term: string): string {
   return term.trim().replace(/[,%()*\\:]/g, "");
 }
 
-/** Attach the viewer's `liked_by_me` / `saved_by_me` flags to a batch of posts. */
+/** Fetch polls (with options, the viewer's vote, and totals) for a batch of
+ * posts, keyed by post id. Only posts that actually have a poll appear. */
+async function fetchPollsForPosts(
+  client: Client,
+  postIds: string[],
+  viewerId: string | null
+): Promise<Map<string, PollWithMeta>> {
+  const byPost = new Map<string, PollWithMeta>();
+  if (postIds.length === 0) return byPost;
+
+  const { data: pollRows } = await client
+    .from("polls")
+    .select("*")
+    .in("post_id", postIds);
+  const polls = (pollRows ?? []) as Poll[];
+  if (polls.length === 0) return byPost;
+
+  const pollIds = polls.map((p) => p.id);
+  const { data: optionRows } = await client
+    .from("poll_options")
+    .select("*")
+    .in("poll_id", pollIds)
+    .order("position", { ascending: true });
+  const options = (optionRows ?? []) as PollOption[];
+
+  const myVoteByPoll = new Map<string, string>();
+  if (viewerId) {
+    const { data: voteRows } = await client
+      .from("poll_votes")
+      .select("poll_id, option_id")
+      .eq("user_id", viewerId)
+      .in("poll_id", pollIds);
+    for (const v of (voteRows ?? []) as { poll_id: string; option_id: string }[]) {
+      myVoteByPoll.set(v.poll_id, v.option_id);
+    }
+  }
+
+  const optionsByPoll = new Map<string, PollOption[]>();
+  for (const o of options) {
+    const arr = optionsByPoll.get(o.poll_id) ?? [];
+    arr.push(o);
+    optionsByPoll.set(o.poll_id, arr);
+  }
+
+  for (const poll of polls) {
+    const opts = optionsByPoll.get(poll.id) ?? [];
+    byPost.set(poll.post_id, {
+      ...poll,
+      options: opts,
+      my_vote_option_id: myVoteByPoll.get(poll.id) ?? null,
+      total_votes: opts.reduce((sum, o) => sum + o.vote_count, 0),
+    });
+  }
+
+  return byPost;
+}
+
+/** Attach the viewer's `liked_by_me` / `saved_by_me` flags plus any poll to a
+ * batch of posts. */
 async function withViewerMeta(
   client: Client,
   rows: RawPost[],
   viewerId: string | null
 ): Promise<PostWithAuthor[]> {
   if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+
+  // Polls are viewer-independent except for the viewer's own vote, so fetch
+  // them concurrently with the like/save flags.
+  const pollsPromise = fetchPollsForPosts(client, ids, viewerId);
 
   let liked = new Set<string>();
   let saved = new Set<string>();
   if (viewerId) {
-    const ids = rows.map((r) => r.id);
     const [{ data: likeRows }, { data: savedRows }] = await Promise.all([
       client.from("likes").select("post_id").eq("user_id", viewerId).in("post_id", ids),
       client.from("saved_posts").select("post_id").eq("user_id", viewerId).in("post_id", ids),
@@ -52,10 +117,13 @@ async function withViewerMeta(
     saved = new Set((savedRows ?? []).map((s) => s.post_id));
   }
 
+  const pollsByPost = await pollsPromise;
+
   return rows.map((r) => ({
     ...r,
     liked_by_me: liked.has(r.id),
     saved_by_me: saved.has(r.id),
+    poll: pollsByPost.get(r.id) ?? null,
   }));
 }
 

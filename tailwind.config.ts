@@ -50,6 +50,10 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "surface-1": "hsl(var(--surface-1))",
+        "surface-2": "hsl(var(--surface-2))",
+        "text-accent": "hsl(var(--text-accent))",
+        "fill-accent": "hsl(var(--fill-accent))",
       },
       borderRadius: {
         lg: "var(--radius)",

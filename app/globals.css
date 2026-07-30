@@ -4,10 +4,16 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Page sits a touch below white so borderless white surfaces read as cards. */
+    --background: 210 40% 96%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+    /* Surface & accent tokens for the borderless card system. */
+    --surface-1: 0 0% 100%; /* elevated card surface (composer, post cards) */
+    --surface-2: 214.3 31.8% 91%; /* control / disabled surface */
+    --text-accent: 203 89% 53%;
+    --fill-accent: 203 89% 53%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 203 89% 53%;
@@ -31,6 +37,11 @@
     --foreground: 210 40% 98%;
     --card: 222.2 47% 8%;
     --card-foreground: 210 40% 98%;
+    /* Surfaces already sit above the near-black page, so no border is needed. */
+    --surface-1: 222.2 47% 8%;
+    --surface-2: 217.2 32.6% 17.5%;
+    --text-accent: 203 89% 53%;
+    --fill-accent: 203 89% 53%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
     --primary: 203 89% 53%;

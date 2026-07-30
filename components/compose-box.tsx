@@ -9,10 +9,16 @@ import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { EmojiPickerButton } from "@/components/media/emoji-picker-button";
 import { GifPickerButton } from "@/components/media/gif-picker-button";
+import {
+  PollComposer,
+  DEFAULT_POLL_DRAFT,
+  isPollDraftValid,
+  type PollDraft,
+} from "@/components/poll/poll-composer";
 import { cn } from "@/lib/utils";
 import { MAX_POST_LENGTH, POST_IMAGES_BUCKET } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
-import { createPost } from "@/app/actions/posts";
+import { createPost, createPollPost } from "@/app/actions/posts";
 import type { PostWithAuthor, Profile } from "@/lib/types";
 
 /** Twitter-style circular character counter: full track + accent arc that
@@ -27,7 +33,7 @@ function ProgressRing({ value, max }: { value: number; max: number }) {
     ? "hsl(var(--destructive))"
     : near
     ? "#eab308"
-    : "hsl(var(--primary))";
+    : "hsl(var(--fill-accent))";
 
   return (
     <svg
@@ -65,10 +71,12 @@ function ToolbarButton({
   icon: Icon,
   label,
   onClick,
+  disabled,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Button
@@ -78,6 +86,7 @@ function ToolbarButton({
       className="h-9 w-9 text-primary"
       aria-label={label}
       onClick={onClick}
+      disabled={disabled}
     >
       <Icon className="h-5 w-5" />
     </Button>
@@ -105,6 +114,7 @@ export function ComposeBox({
   const [file, setFile] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const [gifUrl, setGifUrl] = React.useState<string | null>(null);
+  const [poll, setPoll] = React.useState<PollDraft | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
@@ -126,7 +136,8 @@ export function ComposeBox({
   const count = content.trim().length;
   const overLimit = count > MAX_POST_LENGTH;
   const near = !overLimit && MAX_POST_LENGTH - count <= 20;
-  const canSubmit = count > 0 && !overLimit && !submitting;
+  const pollValid = poll === null || isPollDraftValid(poll);
+  const canSubmit = count > 0 && !overLimit && !submitting && pollValid;
   const attachment = previewUrl ?? gifUrl;
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -160,6 +171,11 @@ export function ComposeBox({
     setPreviewUrl(null);
     setGifUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function openPoll() {
+    clearAttachment(); // a post can carry a poll OR media, never both
+    setPoll(DEFAULT_POLL_DRAFT);
   }
 
   function insertEmoji(emoji: string) {
@@ -203,6 +219,26 @@ export function ComposeBox({
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
+
+    if (poll) {
+      const res = await createPollPost({
+        content: content.trim(),
+        options: poll.options,
+        durationMinutes: poll.durationMinutes,
+      });
+      if (res.error) {
+        toast.error(res.error);
+        setSubmitting(false);
+        return;
+      }
+      setContent("");
+      setPoll(null);
+      setSubmitting(false);
+      // Poll posts need their server-generated option ids to be votable, so
+      // refresh to pull the real post rather than prepend a synthetic one.
+      router.refresh();
+      return;
+    }
 
     let imageUrl: string | null = null;
     let uploadedPath: string | null = null;
@@ -248,6 +284,7 @@ export function ComposeBox({
         author: profile,
         liked_by_me: false,
         saved_by_me: false,
+        poll: null,
       };
       onPosted(optimistic);
     } else {
@@ -258,7 +295,7 @@ export function ComposeBox({
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-[18px] border border-border bg-card p-3 transition-colors focus-within:border-primary/40"
+      className="rounded-[18px] bg-surface-1 p-3 shadow-sm transition-shadow focus-within:ring-1 focus-within:ring-primary/30"
     >
       <div className="flex gap-3">
         <UserAvatar profile={profile} className="h-11 w-11 shrink-0" />
@@ -294,11 +331,20 @@ export function ComposeBox({
               </button>
             </div>
           )}
+
+          {poll && (
+            <PollComposer
+              value={poll}
+              onChange={setPoll}
+              onRemove={() => setPoll(null)}
+              disabled={submitting}
+            />
+          )}
         </div>
       </div>
 
-      {/* Toolbar — sits on a divider separating it from the footer below. */}
-      <div className="mt-2 flex items-center gap-0.5 border-b border-border pb-2">
+      {/* Toolbar — sits below the text/image, separated by a thin top border. */}
+      <div className="mt-3 flex items-center gap-0.5 border-t border-border pt-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -310,13 +356,15 @@ export function ComposeBox({
           icon={ImageIcon}
           label="Add image"
           onClick={() => fileInputRef.current?.click()}
+          disabled={poll !== null}
         />
-        <GifPickerButton onSelect={onSelectGif} />
+        <GifPickerButton onSelect={onSelectGif} disabled={poll !== null} />
         <EmojiPickerButton onEmoji={insertEmoji} />
         <ToolbarButton
           icon={BarChart2}
           label="Create poll"
-          onClick={() => toast("Polls are coming soon.")}
+          onClick={openPoll}
+          disabled={poll !== null || attachment !== null}
         />
         <ToolbarButton
           icon={MapPin}
@@ -344,7 +392,7 @@ export function ComposeBox({
           type="submit"
           disabled={!canSubmit}
           aria-describedby="compose-status"
-          className="rounded-full px-5"
+          className="rounded-full px-5 font-bold disabled:bg-surface-2 disabled:text-muted-foreground disabled:opacity-100"
         >
           {submitting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
           Post
