@@ -32,8 +32,8 @@ function sanitizeTerm(term: string): string {
   return term.trim().replace(/[,%()*\\:]/g, "");
 }
 
-/** Attach `liked_by_me` to a batch of posts with a single likes query. */
-async function withLiked(
+/** Attach the viewer's `liked_by_me` / `saved_by_me` flags to a batch of posts. */
+async function withViewerMeta(
   client: Client,
   rows: RawPost[],
   viewerId: string | null
@@ -41,17 +41,22 @@ async function withLiked(
   if (rows.length === 0) return [];
 
   let liked = new Set<string>();
+  let saved = new Set<string>();
   if (viewerId) {
     const ids = rows.map((r) => r.id);
-    const { data } = await client
-      .from("likes")
-      .select("post_id")
-      .eq("user_id", viewerId)
-      .in("post_id", ids);
-    liked = new Set((data ?? []).map((l) => l.post_id));
+    const [{ data: likeRows }, { data: savedRows }] = await Promise.all([
+      client.from("likes").select("post_id").eq("user_id", viewerId).in("post_id", ids),
+      client.from("saved_posts").select("post_id").eq("user_id", viewerId).in("post_id", ids),
+    ]);
+    liked = new Set((likeRows ?? []).map((l) => l.post_id));
+    saved = new Set((savedRows ?? []).map((s) => s.post_id));
   }
 
-  return rows.map((r) => ({ ...r, liked_by_me: liked.has(r.id) }));
+  return rows.map((r) => ({
+    ...r,
+    liked_by_me: liked.has(r.id),
+    saved_by_me: saved.has(r.id),
+  }));
 }
 
 export async function getFollowingIds(
@@ -82,7 +87,7 @@ export async function getFeed(
 
   if (error) throw error;
 
-  const posts = await withLiked(
+  const posts = await withViewerMeta(
     client,
     (data ?? []) as unknown as RawPost[],
     userId
@@ -102,7 +107,35 @@ export async function getUserPosts(
     .order("created_at", { ascending: false })
     .limit(LIST_LIMIT);
 
-  return withLiked(client, (data ?? []) as unknown as RawPost[], viewerId);
+  return withViewerMeta(client, (data ?? []) as unknown as RawPost[], viewerId);
+}
+
+/** Posts the viewer has bookmarked, most-recently-saved first. */
+export async function getSavedPosts(
+  client: Client,
+  userId: string
+): Promise<PostWithAuthor[]> {
+  const { data: savedRows } = await client
+    .from("saved_posts")
+    .select("post_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
+
+  const ids = (savedRows ?? []).map((s) => s.post_id);
+  if (ids.length === 0) return [];
+
+  const { data } = await client.from("posts").select(POST_SELECT).in("id", ids);
+
+  // posts.in() doesn't preserve order — restore the saved (recency) order.
+  const byId = new Map(
+    ((data ?? []) as unknown as RawPost[]).map((r) => [r.id, r])
+  );
+  const ordered = ids
+    .map((id) => byId.get(id))
+    .filter((r): r is RawPost => !!r);
+
+  return withViewerMeta(client, ordered, userId);
 }
 
 export async function getPost(
@@ -117,7 +150,7 @@ export async function getPost(
     .maybeSingle();
 
   if (!data) return null;
-  const [post] = await withLiked(
+  const [post] = await withViewerMeta(
     client,
     [data as unknown as RawPost],
     viewerId
@@ -221,7 +254,7 @@ export async function searchPosts(
     .order("created_at", { ascending: false })
     .limit(SEARCH_LIMIT);
 
-  return withLiked(client, (data ?? []) as unknown as RawPost[], viewerId);
+  return withViewerMeta(client, (data ?? []) as unknown as RawPost[], viewerId);
 }
 
 /** Posts containing an exact #hashtag (case-insensitive). */
@@ -249,7 +282,7 @@ export async function getHashtagPosts(
     extractHashtags(p.content).includes(safe)
   );
 
-  return withLiked(client, rows, viewerId);
+  return withViewerMeta(client, rows, viewerId);
 }
 
 // ---- Discovery (right sidebar): trending hashtags & who-to-follow ----

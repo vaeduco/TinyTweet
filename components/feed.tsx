@@ -75,7 +75,12 @@ export function Feed({
             prev.some((p) => p.id === row.id)
               ? prev
               : [
-                  { ...row, author: author as Profile, liked_by_me: false },
+                  {
+                    ...row,
+                    author: author as Profile,
+                    liked_by_me: false,
+                    saved_by_me: false,
+                  },
                   ...prev,
                 ]
           );
@@ -112,9 +117,11 @@ export function Feed({
           </p>
         </div>
       ) : (
-        posts.map((post) => (
-          <PostCard key={post.id} post={post} currentUserId={currentUserId} />
-        ))
+        <div className="flex flex-col gap-2 p-2">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} currentUserId={currentUserId} />
+          ))}
+        </div>
       )}
     </div>
   );

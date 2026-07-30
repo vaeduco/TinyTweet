@@ -56,9 +56,11 @@ export default async function HashtagPage({
           </p>
         </div>
       ) : (
-        posts.map((p) => (
-          <PostCard key={p.id} post={p} currentUserId={user?.id ?? null} />
-        ))
+        <div className="flex flex-col gap-2 p-2">
+          {posts.map((p) => (
+            <PostCard key={p.id} post={p} currentUserId={user?.id ?? null} />
+          ))}
+        </div>
       )}
     </div>
   );

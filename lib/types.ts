@@ -41,6 +41,12 @@ export type Like = {
   created_at: string;
 };
 
+export type SavedPost = {
+  user_id: string;
+  post_id: string;
+  created_at: string;
+};
+
 export type Follow = {
   follower_id: string;
   following_id: string;
@@ -67,6 +73,8 @@ export type PostWithAuthor = Post & {
   author: Profile;
   /** Whether the current viewer has liked this post. */
   liked_by_me: boolean;
+  /** Whether the current viewer has bookmarked this post. */
+  saved_by_me: boolean;
 };
 
 /** A reply with its author profile joined in. */
@@ -198,6 +206,12 @@ export type Database = {
         Row: Like;
         Insert: { user_id: string; post_id: string; created_at?: string };
         Update: Partial<Like>;
+        Relationships: [];
+      };
+      saved_posts: {
+        Row: SavedPost;
+        Insert: { user_id: string; post_id: string; created_at?: string };
+        Update: Partial<SavedPost>;
         Relationships: [];
       };
       follows: {

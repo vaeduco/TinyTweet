@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bookmark,
   Home,
   LogOut,
   MoreHorizontal,
@@ -161,6 +162,12 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
                 <Link href={`/${profile.username}`}>
                   <UserIcon className="mr-2 h-4 w-4" />
                   Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/saved">
+                  <Bookmark className="mr-2 h-4 w-4" />
+                  Saved
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

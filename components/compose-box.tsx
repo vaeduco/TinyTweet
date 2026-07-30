@@ -125,6 +125,7 @@ export function ComposeBox({
         created_at: new Date().toISOString(),
         author: profile,
         liked_by_me: false,
+        saved_by_me: false,
       };
       onPosted(optimistic);
     } else {

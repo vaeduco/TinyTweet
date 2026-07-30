@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Bookmark,
   Heart,
   MessageCircle,
   MoreHorizontal,
@@ -25,6 +26,7 @@ import { formatRelativeTime, formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { PostWithAuthor } from "@/lib/types";
 import { toggleLike } from "@/app/actions/likes";
+import { toggleSave } from "@/app/actions/saves";
 import { deletePost } from "@/app/actions/posts";
 
 export function PostCard({
@@ -43,6 +45,8 @@ export function PostCard({
   const [liked, setLiked] = React.useState(post.liked_by_me);
   const [likeCount, setLikeCount] = React.useState(post.like_count);
   const [likePending, setLikePending] = React.useState(false);
+  const [saved, setSaved] = React.useState(post.saved_by_me);
+  const [savePending, setSavePending] = React.useState(false);
   const [deleted, setDeleted] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -104,11 +108,31 @@ export function PostCard({
     }
   }
 
+  async function onSave() {
+    if (!currentUserId) {
+      toast.error("Sign in to save posts.");
+      return;
+    }
+    if (savePending) return;
+    setSavePending(true);
+
+    const prevSaved = saved;
+    setSaved(!prevSaved); // optimistic
+    const res = await toggleSave(post.id);
+    if (res.error) {
+      setSaved(prevSaved);
+      toast.error(res.error);
+    } else {
+      setSaved(res.saved);
+    }
+    setSavePending(false);
+  }
+
   return (
     <article
       className={cn(
-        "flex gap-3 border-b border-border px-4 py-3 transition-colors",
-        highlight ? "bg-muted/30" : "hover:bg-muted/40"
+        "flex gap-3 rounded-xl border border-border bg-card px-3.5 py-2.5 transition-colors",
+        highlight && "ring-1 ring-primary/40"
       )}
     >
       <Link href={profileHref} className="shrink-0" aria-label={author.username}>
@@ -175,7 +199,7 @@ export function PostCard({
         </div>
 
         {post.image_url && (
-          <Link href={postHref} className="mt-3 block">
+          <Link href={postHref} className="mt-2 block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={post.image_url}
@@ -224,6 +248,23 @@ export function PostCard({
           >
             <span className="rounded-full p-1.5 group-hover:bg-primary/10">
               <Share2 className="h-[18px] w-[18px]" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onSave}
+            className={cn(
+              "group flex items-center gap-1.5 rounded-full text-sm transition-colors hover:text-primary",
+              saved && "text-primary"
+            )}
+            aria-pressed={saved}
+            aria-label={saved ? "Remove bookmark" : "Save"}
+          >
+            <span className="rounded-full p-1.5 group-hover:bg-primary/10">
+              <Bookmark
+                className={cn("h-[18px] w-[18px]", saved && "fill-current")}
+              />
             </span>
           </button>
         </div>

@@ -146,7 +146,7 @@ async function PostResults({
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-2 p-2">
       {posts.map((p) => (
         <PostCard key={p.id} post={p} currentUserId={viewerId} />
       ))}

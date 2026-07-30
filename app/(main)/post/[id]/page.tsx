@@ -60,7 +60,9 @@ export default async function PostPage({
         <h1 className="text-xl font-bold">Post</h1>
       </div>
 
-      <PostCard post={post} currentUserId={user?.id ?? null} highlight />
+      <div className="p-2">
+        <PostCard post={post} currentUserId={user?.id ?? null} highlight />
+      </div>
 
       <ReplyForm postId={post.id} profile={profile} />
 

@@ -32,6 +32,11 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResult> {
   const { error } = await supabase
     .from("likes")
     .insert({ post_id: postId, user_id: user.id });
-  if (error) return { error: error.message, liked: false };
+  // A concurrent like can race past the SELECT above; the (user_id, post_id)
+  // primary key then rejects the duplicate. That means it's already liked —
+  // treat it as success, not an error.
+  if (error && error.code !== "23505") {
+    return { error: error.message, liked: false };
+  }
   return { liked: true };
 }
