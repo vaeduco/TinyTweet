@@ -121,9 +121,12 @@ export function ComposeBox({
     el.style.height = `${el.scrollHeight}px`;
   }, [content]);
 
-  const count = content.length;
+  // Measure the trimmed length so the counter, over-limit state, and Post
+  // button all agree with what createPost actually validates (it trims too).
+  const count = content.trim().length;
   const overLimit = count > MAX_POST_LENGTH;
-  const canSubmit = content.trim().length > 0 && !overLimit && !submitting;
+  const near = !overLimit && MAX_POST_LENGTH - count <= 20;
+  const canSubmit = count > 0 && !overLimit && !submitting;
   const attachment = previewUrl ?? gifUrl;
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -176,7 +179,9 @@ export function ComposeBox({
     });
   }
 
-  async function uploadImage(pickedFile: File): Promise<string | null> {
+  async function uploadImage(
+    pickedFile: File
+  ): Promise<{ url: string; path: string } | null> {
     const ext = pickedFile.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${profile.id}/${Date.now()}-${Math.round(
       performance.now()
@@ -191,7 +196,7 @@ export function ComposeBox({
     const { data } = supabase.storage
       .from(POST_IMAGES_BUCKET)
       .getPublicUrl(path);
-    return data.publicUrl;
+    return { url: data.publicUrl, path };
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -200,12 +205,15 @@ export function ComposeBox({
     setSubmitting(true);
 
     let imageUrl: string | null = null;
+    let uploadedPath: string | null = null;
     if (file) {
-      imageUrl = await uploadImage(file);
-      if (!imageUrl) {
+      const uploaded = await uploadImage(file);
+      if (!uploaded) {
         setSubmitting(false);
         return;
       }
+      imageUrl = uploaded.url;
+      uploadedPath = uploaded.path;
     } else if (gifUrl) {
       imageUrl = gifUrl;
     }
@@ -214,6 +222,10 @@ export function ComposeBox({
     const res = await createPost({ content: text, imageUrl });
 
     if (res.error) {
+      // Don't leave the just-uploaded image orphaned in storage (best-effort).
+      if (uploadedPath) {
+        await supabase.storage.from(POST_IMAGES_BUCKET).remove([uploadedPath]);
+      }
       toast.error(res.error);
       setSubmitting(false);
       return;
@@ -259,6 +271,8 @@ export function ComposeBox({
             placeholder={placeholder}
             autoFocus={autoFocus}
             rows={1}
+            aria-invalid={overLimit || undefined}
+            aria-describedby="compose-status"
             className="min-h-[48px] w-full resize-none overflow-hidden border-0 bg-transparent py-2 text-lg leading-relaxed placeholder:text-muted-foreground focus:outline-none"
           />
 
@@ -326,11 +340,28 @@ export function ComposeBox({
             <ProgressRing value={count} max={MAX_POST_LENGTH} />
           </>
         )}
-        <Button type="submit" disabled={!canSubmit} className="rounded-full px-5">
+        <Button
+          type="submit"
+          disabled={!canSubmit}
+          aria-describedby="compose-status"
+          className="rounded-full px-5"
+        >
           {submitting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
           Post
         </Button>
       </div>
+
+      {/* Screen-reader status: announces the count near the limit and when
+          over (kept silent otherwise so it doesn't read on every keystroke). */}
+      <span id="compose-status" role="status" aria-live="polite" className="sr-only">
+        {overLimit
+          ? `${count - MAX_POST_LENGTH} character${
+              count - MAX_POST_LENGTH === 1 ? "" : "s"
+            } over the limit. You can't post yet.`
+          : near
+          ? `${MAX_POST_LENGTH - count} characters remaining.`
+          : ""}
+      </span>
     </form>
   );
 }
