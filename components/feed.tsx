@@ -105,7 +105,9 @@ export function Feed({
   return (
     <div>
       {profile && currentUserId && (
-        <ComposeBox profile={profile} onPosted={prepend} />
+        <div className="p-2">
+          <ComposeBox profile={profile} onPosted={prepend} />
+        </div>
       )}
 
       {posts.length === 0 ? (
