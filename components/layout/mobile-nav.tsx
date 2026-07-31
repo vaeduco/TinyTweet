@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationsNavItem } from "@/components/notifications/notifications-nav-item";
 import { MessagesNavItem } from "@/components/messages/messages-nav-item";
+import { ComposeModalButton } from "@/components/compose-modal";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
@@ -69,8 +70,8 @@ export function MobileTopBar({ profile }: { profile: Profile | null }) {
         )}
       </div>
 
-      <Link href="/" className="text-xl" aria-label={APP_NAME}>
-        🐦
+      <Link href="/" className="text-lg font-bold tracking-tight">
+        {APP_NAME}
       </Link>
 
       <div className="flex flex-1 items-center justify-end gap-1">
@@ -99,6 +100,7 @@ export function MobileBottomNav({ profile }: { profile: Profile | null }) {
             icon={Search}
             active={pathname.startsWith("/search")}
           />
+          {profile && <ComposeModalButton profile={profile} />}
           {profile && <MessagesNavItem variant="bottom" />}
           {profile && (
             <BottomLink

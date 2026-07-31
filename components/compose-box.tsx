@@ -96,12 +96,15 @@ function ToolbarButton({
 export function ComposeBox({
   profile,
   onPosted,
+  onDone,
   placeholder = "What's happening?",
   autoFocus = false,
 }: {
   profile: Profile;
   /** Called with an optimistic post on success (feed prepends it). */
   onPosted?: (post: PostWithAuthor) => void;
+  /** Called after any successful post (poll or not) — e.g. to close a modal. */
+  onDone?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
 }) {
@@ -237,6 +240,7 @@ export function ComposeBox({
       // Poll posts need their server-generated option ids to be votable, so
       // refresh to pull the real post rather than prepend a synthetic one.
       router.refresh();
+      onDone?.();
       return;
     }
 
@@ -290,6 +294,7 @@ export function ComposeBox({
     } else {
       router.refresh();
     }
+    onDone?.();
   }
 
   return (
