@@ -72,7 +72,7 @@ export default async function MainLayout({
           <div className="mx-auto flex w-full max-w-[1290px] justify-center">
             <LeftSidebar profile={profile} />
 
-            <main className="min-h-dvh w-full min-w-0 max-w-[600px] border-x border-border pb-16 lg:pb-0">
+            <main className="min-h-dvh w-full min-w-0 max-w-[600px] border-x border-border pb-20 lg:pb-0">
               {children}
             </main>
 

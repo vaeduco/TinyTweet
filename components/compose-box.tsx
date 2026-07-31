@@ -239,7 +239,8 @@ export function ComposeBox({
       setSubmitting(false);
       // Poll posts need their server-generated option ids to be votable, so
       // refresh to pull the real post rather than prepend a synthetic one.
-      router.refresh();
+      // (When a modal owns navigation via onDone, it refreshes instead.)
+      if (!onDone) router.refresh();
       onDone?.();
       return;
     }
@@ -291,7 +292,7 @@ export function ComposeBox({
         poll: null,
       };
       onPosted(optimistic);
-    } else {
+    } else if (!onDone) {
       router.refresh();
     }
     onDone?.();

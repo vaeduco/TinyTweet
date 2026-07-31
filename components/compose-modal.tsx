@@ -28,9 +28,9 @@ export function ComposeModalButton({ profile }: { profile: Profile }) {
         <button
           type="button"
           aria-label="Create post"
-          className="flex flex-1 items-center justify-center py-3"
+          className="group flex h-12 flex-1 items-center justify-center focus:outline-none"
         >
-          <span className="flex h-12 w-12 -translate-y-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background transition-transform hover:scale-105 active:scale-95">
+          <span className="flex h-12 w-12 -translate-y-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background transition-transform hover:scale-105 active:scale-95 group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
             <Plus className="h-6 w-6" />
           </span>
         </button>
