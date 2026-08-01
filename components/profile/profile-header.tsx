@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Calendar } from "lucide-react";
+import { Calendar, Settings } from "lucide-react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/follow-button";
 import { MessageButton } from "@/components/messages/message-button";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
+import { ProfileActionsMenu } from "@/components/profile/profile-actions-menu";
 import { ProfileCover } from "@/components/profile/profile-cover";
 import { PresenceStatus } from "@/components/presence/presence-status";
 import { renderContent } from "@/lib/parse";
@@ -40,14 +41,36 @@ export function ProfileHeader({
             className="h-20 w-20 border-4 border-background"
           />
           {isOwner ? (
-            <EditProfileDialog profile={profile} />
+            <div className="flex items-center gap-2">
+              <Button
+                asChild
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                aria-label="Settings"
+              >
+                <Link href="/settings">
+                  <Settings className="h-5 w-5" />
+                </Link>
+              </Button>
+              <EditProfileDialog profile={profile} />
+            </div>
           ) : isAuthed ? (
             <div className="flex items-center gap-2">
-              <MessageButton targetId={profile.id} />
-              <FollowButton
-                targetUserId={profile.id}
-                initialFollowing={profile.followed_by_me}
+              <ProfileActionsMenu
+                targetId={profile.id}
+                username={profile.username}
+                blockedByMe={profile.blocked_by_me}
               />
+              {!profile.blocked_by_me && (
+                <>
+                  <MessageButton targetId={profile.id} />
+                  <FollowButton
+                    targetUserId={profile.id}
+                    initialFollowing={profile.followed_by_me}
+                  />
+                </>
+              )}
             </div>
           ) : (
             <Button asChild variant="default">

@@ -272,14 +272,24 @@ export async function getProfileWithStats(
   ]);
 
   let followed_by_me = false;
+  let blocked_by_me = false;
   if (viewerId && viewerId !== profile.id) {
-    const { data } = await client
-      .from("follows")
-      .select("following_id")
-      .eq("follower_id", viewerId)
-      .eq("following_id", profile.id)
-      .maybeSingle();
-    followed_by_me = !!data;
+    const [{ data: followRow }, { data: blockRow }] = await Promise.all([
+      client
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", viewerId)
+        .eq("following_id", profile.id)
+        .maybeSingle(),
+      client
+        .from("blocks")
+        .select("blocked_id")
+        .eq("blocker_id", viewerId)
+        .eq("blocked_id", profile.id)
+        .maybeSingle(),
+    ]);
+    followed_by_me = !!followRow;
+    blocked_by_me = !!blockRow;
   }
 
   return {
@@ -288,7 +298,28 @@ export async function getProfileWithStats(
     following_count: following.count ?? 0,
     posts_count: postsCount.count ?? 0,
     followed_by_me,
+    blocked_by_me,
   };
+}
+
+/** Profiles the viewer has blocked (for the settings block list). */
+export async function getBlockedProfiles(
+  client: Client,
+  userId: string
+): Promise<Profile[]> {
+  const { data: rows } = await client
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", userId)
+    .order("created_at", { ascending: false });
+
+  const ids = (rows ?? []).map((r) => r.blocked_id);
+  if (ids.length === 0) return [];
+
+  const { data } = await client.from("profiles").select("*").in("id", ids);
+  // .in() doesn't preserve order — restore the block recency order.
+  const byId = new Map(((data ?? []) as Profile[]).map((p) => [p.id, p]));
+  return ids.map((id) => byId.get(id)).filter((p): p is Profile => !!p);
 }
 
 export async function searchUsers(

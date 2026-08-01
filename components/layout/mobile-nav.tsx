@@ -3,7 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Home, LogOut, Search, User as UserIcon } from "lucide-react";
+import {
+  Bookmark,
+  Home,
+  LogOut,
+  Search,
+  Settings,
+  User as UserIcon,
+} from "lucide-react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -49,6 +56,12 @@ export function MobileTopBar({ profile }: { profile: Profile | null }) {
                 <Link href="/saved">
                   <Bookmark className="mr-2 h-4 w-4" />
                   Saved
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

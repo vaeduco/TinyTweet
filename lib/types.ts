@@ -1,6 +1,8 @@
 // Hand-written database types for the TinyTweet Supabase schema.
 // Keep in sync with supabase/migrations/0001_init.sql.
 
+export type DmPrivacy = "everyone" | "following" | "none";
+
 export type Profile = {
   id: string;
   username: string;
@@ -8,9 +10,20 @@ export type Profile = {
   bio: string | null;
   avatar_url: string | null;
   cover_url: string | null;
+  notify_follows: boolean;
+  notify_likes: boolean;
+  notify_replies: boolean;
+  notify_mentions: boolean;
+  dm_privacy: DmPrivacy;
   created_at: string;
   updated_at: string;
   last_seen_at: string | null;
+};
+
+export type Block = {
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
 };
 
 export type Post = {
@@ -182,6 +195,7 @@ export type ProfileWithStats = Profile & {
   following_count: number;
   posts_count: number;
   followed_by_me: boolean;
+  blocked_by_me: boolean;
 };
 
 // ---- Typed Supabase Database definition ----
@@ -200,6 +214,11 @@ export type Database = {
           bio?: string | null;
           avatar_url?: string | null;
           cover_url?: string | null;
+          notify_follows?: boolean;
+          notify_likes?: boolean;
+          notify_replies?: boolean;
+          notify_mentions?: boolean;
+          dm_privacy?: DmPrivacy;
           created_at?: string;
           updated_at?: string;
           last_seen_at?: string | null;
@@ -280,6 +299,12 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<PollVote>;
+        Relationships: [];
+      };
+      blocks: {
+        Row: Block;
+        Insert: { blocker_id: string; blocked_id: string; created_at?: string };
+        Update: Partial<Block>;
         Relationships: [];
       };
       follows: {
@@ -413,6 +438,10 @@ export type Database = {
           p_duration_minutes: number;
         };
         Returns: string;
+      };
+      block_user: {
+        Args: { p_target: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

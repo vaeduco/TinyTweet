@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   PenSquare,
   Search,
+  Settings,
   User as UserIcon,
 } from "lucide-react";
 
@@ -168,6 +169,12 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
                 <Link href="/saved">
                   <Bookmark className="mr-2 h-4 w-4" />
                   Saved
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
