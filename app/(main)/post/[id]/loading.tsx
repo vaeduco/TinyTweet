@@ -7,10 +7,12 @@ export default function Loading() {
         <div className="h-5 w-5 animate-pulse rounded bg-muted" />
         <div className="h-6 w-16 animate-pulse rounded bg-muted" />
       </div>
-      <PostSkeleton />
-      <PostSkeleton />
-      <PostSkeleton />
-      <PostSkeleton />
+      <div className="flex flex-col gap-2 p-2">
+        <PostSkeleton />
+        <PostSkeleton />
+        <PostSkeleton />
+        <PostSkeleton />
+      </div>
     </div>
   );
 }

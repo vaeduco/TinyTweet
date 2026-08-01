@@ -512,15 +512,15 @@ function AddPeople({
             Everyone you follow is already in this conversation.
           </p>
         ) : (
-          <div className="max-h-72 overflow-y-auto">
+          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto p-2">
             {addable.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => toggle(p.id)}
-                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted"
+                className="flex w-full items-center gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2.5 text-left shadow-sm transition-colors hover:bg-surface-2/40"
               >
-                <UserAvatar profile={p} className="h-9 w-9" />
+                <UserAvatar profile={p} className="h-10 w-10" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">
                     {p.display_name || p.username}

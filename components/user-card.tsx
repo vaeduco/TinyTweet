@@ -18,7 +18,7 @@ export function UserCard({
   const showFollow = currentUserId != null && currentUserId !== profile.id;
 
   return (
-    <div className="flex gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-muted/40">
+    <div className="flex gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2.5 shadow-sm">
       <Link href={profileHref} className="shrink-0" aria-label={profile.username}>
         <UserAvatar profile={profile} className="h-10 w-10" />
       </Link>

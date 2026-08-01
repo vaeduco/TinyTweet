@@ -46,13 +46,15 @@ function NotificationRow({
       href={href}
       onClick={onSelect}
       className={cn(
-        "flex items-start gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-muted/40",
-        !n.is_read && "bg-primary/5"
+        "flex items-start gap-3 rounded-[14px] px-3.5 py-2.5 shadow-sm transition-colors",
+        n.is_read
+          ? "bg-surface-1 hover:bg-surface-2/40"
+          : "bg-primary/5 hover:bg-primary/10"
       )}
     >
       <span className="relative shrink-0">
         <UserAvatar profile={n.actor} className="h-10 w-10" />
-        <span className="absolute -bottom-1 -right-1 rounded-full bg-background p-0.5">
+        <span className="absolute -bottom-1 -right-1 rounded-full bg-surface-1 p-0.5">
           <TypeIcon type={n.type} />
         </span>
       </span>
@@ -103,7 +105,7 @@ export function NotificationsView() {
           </p>
         </div>
       ) : (
-        <div>
+        <div className="flex flex-col gap-2 p-2">
           {notifications.map((n) => (
             <NotificationRow
               key={n.id}

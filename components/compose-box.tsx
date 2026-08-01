@@ -301,7 +301,7 @@ export function ComposeBox({
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-[18px] bg-surface-1 p-3 shadow-sm transition-shadow focus-within:ring-1 focus-within:ring-primary/30"
+      className="rounded-[18px] bg-surface-1 p-2.5 shadow-sm transition-shadow focus-within:ring-1 focus-within:ring-primary/30"
     >
       <div className="flex gap-3">
         <UserAvatar profile={profile} className="h-11 w-11 shrink-0" />
@@ -316,7 +316,7 @@ export function ComposeBox({
             rows={1}
             aria-invalid={overLimit || undefined}
             aria-describedby="compose-status"
-            className="min-h-[48px] w-full resize-none overflow-hidden border-0 bg-transparent py-2 text-lg leading-relaxed placeholder:text-muted-foreground focus:outline-none"
+            className="min-h-[40px] w-full resize-none overflow-hidden border-0 bg-transparent py-1.5 text-lg leading-snug placeholder:text-muted-foreground focus:outline-none"
           />
 
           {attachment && (
@@ -350,7 +350,7 @@ export function ComposeBox({
       </div>
 
       {/* Toolbar — sits below the text/image, separated by a thin top border. */}
-      <div className="mt-3 flex items-center gap-0.5 border-t border-border pt-2">
+      <div className="mt-2 flex items-center gap-0.5 border-t border-border pt-1.5">
         <input
           ref={fileInputRef}
           type="file"
@@ -380,7 +380,7 @@ export function ComposeBox({
       </div>
 
       {/* Footer — right-aligned counter, progress ring, and Post button. */}
-      <div className="mt-2 flex items-center justify-end gap-3">
+      <div className="mt-1.5 flex items-center justify-end gap-3">
         {count > 0 && (
           <>
             <span

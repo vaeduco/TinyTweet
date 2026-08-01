@@ -52,7 +52,7 @@ export function ReplyCard({
   }
 
   return (
-    <article className="flex gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-muted/40">
+    <article className="flex gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2.5 shadow-sm">
       <Link href={profileHref} className="shrink-0" aria-label={author.username}>
         <UserAvatar profile={author} className="h-9 w-9" />
       </Link>
@@ -118,7 +118,7 @@ export function ReplyCard({
         )}
 
         {reply.attachment_url && reply.attachment_type && (
-          <div className="mt-3">
+          <div className="mt-2">
             <Attachment
               url={reply.attachment_url}
               type={reply.attachment_type}

@@ -38,7 +38,7 @@ export function ReplyForm({
 
   if (!profile) {
     return (
-      <div className="border-b border-border px-4 py-6 text-center text-sm text-muted-foreground">
+      <div className="rounded-[14px] bg-surface-1 px-4 py-6 text-center text-sm text-muted-foreground shadow-sm">
         <Link
           href="/login"
           className="font-medium text-primary hover:underline"
@@ -88,7 +88,7 @@ export function ReplyForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="flex gap-3 border-b border-border px-4 py-3"
+      className="flex gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2.5 shadow-sm"
     >
       <UserAvatar profile={profile} className="h-10 w-10 shrink-0" />
 

@@ -8,10 +8,14 @@ export function ConversationAvatar({
   avatars,
   isGroup,
   className,
+  ringClassName = "border-background",
 }: {
   avatars: Profile[];
   isGroup: boolean;
   className?: string;
+  /** Border color for the overlapping group avatars — match the surface they
+   * sit on (the page vs. a card). */
+  ringClassName?: string;
 }) {
   if (avatars.length === 0) {
     return (
@@ -31,11 +35,11 @@ export function ConversationAvatar({
       <div className={cn("relative h-11 w-11 shrink-0", className)}>
         <UserAvatar
           profile={avatars[0]}
-          className="absolute left-0 top-0 h-8 w-8 border-2 border-background"
+          className={cn("absolute left-0 top-0 h-8 w-8 border-2", ringClassName)}
         />
         <UserAvatar
           profile={avatars[1]}
-          className="absolute bottom-0 right-0 h-8 w-8 border-2 border-background"
+          className={cn("absolute bottom-0 right-0 h-8 w-8 border-2", ringClassName)}
         />
       </div>
     );

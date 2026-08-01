@@ -64,12 +64,14 @@ export default async function PostPage({
         <PostCard post={post} currentUserId={user?.id ?? null} highlight />
       </div>
 
-      <ReplyForm postId={post.id} profile={profile} />
+      <div className="px-2">
+        <ReplyForm postId={post.id} profile={profile} />
+      </div>
 
       {replies.length > 0 && (
-        <div className="border-b border-border px-4 py-2 text-sm text-muted-foreground">
+        <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-muted-foreground">
           Replies
-        </div>
+        </h2>
       )}
 
       {replies.length === 0 ? (
@@ -80,9 +82,11 @@ export default async function PostPage({
           </p>
         </div>
       ) : (
-        replies.map((r) => (
-          <ReplyCard key={r.id} reply={r} currentUserId={user?.id ?? null} />
-        ))
+        <div className="flex flex-col gap-2 p-2 pt-1">
+          {replies.map((r) => (
+            <ReplyCard key={r.id} reply={r} currentUserId={user?.id ?? null} />
+          ))}
+        </div>
       )}
     </div>
   );

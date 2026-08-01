@@ -111,7 +111,7 @@ async function PeopleResults({
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-2 p-2">
       {users.map((u) => (
         <UserCard
           key={u.id}

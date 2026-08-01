@@ -93,7 +93,8 @@ export function Inbox({
           </p>
         </div>
       ) : (
-        filtered.map((c) => {
+        <div className="flex flex-col gap-2 p-2">
+          {filtered.map((c) => {
           const d = conversationDisplay(c, c.others, c.participants);
           const muted = isMuted(c.id) || c.is_muted;
           const emph = isUnread(c.id) && !muted; // emphasise only un-muted unread
@@ -105,19 +106,25 @@ export function Inbox({
             <div
               key={c.id}
               className={cn(
-                "flex items-center border-b border-border pr-2 transition-colors hover:bg-muted/40",
-                emph && "bg-primary/5"
+                "flex items-center rounded-[14px] pr-2 shadow-sm transition-colors",
+                emph
+                  ? "bg-primary/5 hover:bg-primary/10"
+                  : "bg-surface-1 hover:bg-surface-2/40"
               )}
             >
               <Link
                 href={`/messages/${c.id}`}
-                className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4"
+                className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-3.5"
               >
                 <span className="relative shrink-0">
-                  <ConversationAvatar avatars={d.avatars} isGroup={d.isGroup} />
+                  <ConversationAvatar
+                    avatars={d.avatars}
+                    isGroup={d.isGroup}
+                    ringClassName="border-surface-1"
+                  />
                   {peerOnline && (
                     <span
-                      className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background bg-green-500"
+                      className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-surface-1 bg-green-500"
                       aria-label="Active now"
                     />
                   )}
@@ -165,7 +172,8 @@ export function Inbox({
               </div>
             </div>
           );
-        })
+          })}
+        </div>
       )}
     </div>
   );
