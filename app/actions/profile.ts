@@ -43,3 +43,24 @@ export async function updateProfile(input: {
   revalidatePath("/", "layout");
   return {};
 }
+
+/** Set (or clear) the signed-in user's profile cover photo. */
+export async function updateCover(
+  coverUrl: string | null
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ cover_url: coverUrl || null })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return {};
+}

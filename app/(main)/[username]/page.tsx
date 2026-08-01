@@ -1,6 +1,4 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -40,24 +38,6 @@ export default async function ProfilePage({
 
   return (
     <div>
-      <div className="sticky top-14 lg:top-0 z-30 flex items-center gap-4 border-b border-border bg-background px-4 py-3">
-        <Link
-          href="/"
-          className="rounded-full p-1 text-foreground transition-colors hover:bg-muted"
-          aria-label="Back home"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold leading-tight">
-            {stats.display_name || stats.username}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {stats.posts_count} posts
-          </p>
-        </div>
-      </div>
-
       <ProfileHeader profile={stats} isOwner={isOwner} isAuthed={!!user} />
 
       {posts.length === 0 ? (

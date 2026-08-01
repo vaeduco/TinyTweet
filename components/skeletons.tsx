@@ -34,7 +34,7 @@ export function FeedSkeleton({ count = 6 }: { count?: number }) {
 export function ProfileHeaderSkeleton() {
   return (
     <div className="border-b border-border">
-      <Skeleton className="h-32 w-full rounded-none sm:h-40" />
+      <Skeleton className="h-[140px] w-full rounded-none" />
       <div className="px-4 pb-4">
         <div className="-mt-10 flex items-end justify-between">
           <Skeleton className="h-20 w-20 rounded-full border-4 border-background" />

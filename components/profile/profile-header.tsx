@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/follow-button";
 import { MessageButton } from "@/components/messages/message-button";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
+import { ProfileCover } from "@/components/profile/profile-cover";
 import { PresenceStatus } from "@/components/presence/presence-status";
 import { renderContent } from "@/lib/parse";
 import type { ProfileWithStats } from "@/lib/types";
@@ -26,7 +27,11 @@ export function ProfileHeader({
 
   return (
     <div className="border-b border-border">
-      <div className="h-32 bg-gradient-to-r from-primary/30 to-primary/10 sm:h-40" />
+      <ProfileCover
+        coverUrl={profile.cover_url}
+        userId={profile.id}
+        isOwner={isOwner}
+      />
 
       <div className="px-4 pb-4">
         <div className="-mt-10 flex items-end justify-between">
