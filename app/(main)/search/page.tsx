@@ -27,7 +27,7 @@ export default async function SearchPage({
 
   return (
     <div>
-      <div className="sticky top-14 lg:top-0 z-30 border-b border-border bg-background px-4 py-3">
+      <div className="sticky top-14 z-30 border-b border-border bg-background px-4 py-3">
         <h1 className="sr-only">Search</h1>
         <SearchBar defaultValue={query} />
       </div>

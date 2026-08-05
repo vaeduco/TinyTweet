@@ -33,7 +33,7 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <div className="sticky top-14 z-30 flex items-center gap-4 border-b border-border bg-background px-4 py-3 lg:top-0">
+      <div className="sticky top-14 z-30 flex items-center gap-4 border-b border-border bg-background px-4 py-3">
         <Link
           href={`/${profile.username}`}
           className="rounded-full p-1 text-foreground transition-colors hover:bg-muted"

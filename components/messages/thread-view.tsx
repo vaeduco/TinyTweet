@@ -311,7 +311,7 @@ export function ThreadView({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-14 z-20 flex items-center gap-3 border-b border-border bg-background px-4 py-2.5 lg:top-0">
+      <div className="sticky top-14 z-20 flex items-center gap-3 border-b border-border bg-background px-4 py-2.5">
         <Link
           href="/messages"
           className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

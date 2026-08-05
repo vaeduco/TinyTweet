@@ -90,7 +90,7 @@ export function NotificationsView() {
 
   return (
     <div>
-      <div className="sticky top-14 z-30 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 lg:top-0">
+      <div className="sticky top-14 z-30 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3">
         <h1 className="text-xl font-bold">Notifications</h1>
         <Button
           variant="ghost"

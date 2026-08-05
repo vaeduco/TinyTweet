@@ -48,7 +48,7 @@ export function NewMessage({ followed }: { followed: Profile[] }) {
 
   return (
     <div>
-      <div className="sticky top-14 z-20 flex items-center gap-4 border-b border-border bg-background px-4 py-3 lg:top-0">
+      <div className="sticky top-14 z-20 flex items-center gap-4 border-b border-border bg-background px-4 py-3">
         <Link
           href="/messages"
           className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"

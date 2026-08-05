@@ -65,19 +65,13 @@ function MenuRow({
 }
 
 /**
- * Slide-out navigation drawer. Opened from the mobile top bar (variant
- * "topbar") and the desktop left sidebar (variant "sidebar"), it coexists with
- * the bottom nav / sidebar as an additional way to get around. Radix Dialog
+ * Slide-out navigation drawer -- the app's primary nav at every width now that
+ * the persistent sidebar is gone. Opened by the hamburger in the top bar, it
+ * holds search, the account row, the main links and Sign out. Radix Dialog
  * gives the overlay, focus trap, Escape, scroll-lock and tap-outside-to-close;
  * we add a left slide animation and swipe-left-to-close on top.
  */
-export function MobileMenu({
-  profile,
-  variant = "topbar",
-}: {
-  profile: Profile;
-  variant?: "topbar" | "sidebar";
-}) {
+export function MobileMenu({ profile }: { profile: Profile }) {
   const [open, setOpen] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -113,22 +107,12 @@ export function MobileMenu({
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        {variant === "sidebar" ? (
-          <button
-            aria-label="Open menu"
-            className="flex items-center gap-4 rounded-full px-3 py-2.5 text-xl text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Menu className="h-6 w-6" />
-            <span className="sr-only xl:not-sr-only xl:inline">Menu</span>
-          </button>
-        ) : (
-          <button
-            aria-label="Open menu"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        )}
+        <button
+          aria-label="Open menu"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
       </Dialog.Trigger>
 
       <Dialog.Portal>

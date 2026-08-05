@@ -9,12 +9,11 @@ import {
 import { NotificationsProvider } from "@/components/notifications/notifications-provider";
 import { MessagesProvider } from "@/components/messages/messages-provider";
 import { PresenceProvider } from "@/components/presence/presence-provider";
-import { LeftSidebar } from "@/components/layout/left-sidebar";
 import {
   RightSidebar,
   RightSidebarSkeleton,
 } from "@/components/layout/right-sidebar";
-import { MobileBottomNav, MobileTopBar } from "@/components/layout/mobile-nav";
+import { MobileBottomNav, TopBar } from "@/components/layout/mobile-nav";
 import type { NotificationWithActor, Profile } from "@/lib/types";
 
 export default async function MainLayout({
@@ -67,11 +66,9 @@ export default async function MainLayout({
       >
         <PresenceProvider userId={user?.id ?? null}>
         <div className="min-h-dvh">
-          <MobileTopBar profile={profile} />
+          <TopBar profile={profile} />
 
-          <div className="mx-auto flex w-full max-w-[1290px] justify-center">
-            <LeftSidebar profile={profile} />
-
+          <div className="mx-auto flex w-full max-w-[976px] justify-center">
             <main className="min-h-dvh w-full min-w-0 max-w-[600px] border-x border-border pb-20 lg:pb-0">
               {children}
             </main>

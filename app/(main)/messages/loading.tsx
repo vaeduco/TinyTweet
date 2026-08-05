@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Loading() {
   return (
     <div>
-      <div className="sticky top-14 z-30 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:top-0">
+      <div className="sticky top-14 z-30 flex items-center justify-between border-b border-border bg-background px-4 py-3">
         <div className="h-6 w-28 animate-pulse rounded bg-muted" />
       </div>
       <div className="flex flex-col gap-2 p-2">

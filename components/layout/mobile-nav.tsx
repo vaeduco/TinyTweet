@@ -31,10 +31,15 @@ import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
 import type { Profile } from "@/lib/types";
 
-/** Sticky top bar for phones/tablets (hidden once the left sidebar appears). */
-export function MobileTopBar({ profile }: { profile: Profile | null }) {
+/**
+ * Sticky top bar shown at ALL widths. The hamburger (MobileMenu) in the
+ * top-left is the sole persistent nav chrome now that the left sidebar is gone;
+ * it opens the slide-out drawer on demand. The mobile bottom nav still coexists
+ * below `lg`.
+ */
+export function TopBar({ profile }: { profile: Profile | null }) {
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4 lg:hidden">
+    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4">
       <div className="flex flex-1 items-center justify-start gap-1">
         {profile && <MobileMenu profile={profile} />}
         {profile ? (

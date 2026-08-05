@@ -34,7 +34,7 @@ export default async function HashtagPage({
 
   return (
     <div>
-      <div className="sticky top-14 lg:top-0 z-30 flex items-center gap-4 border-b border-border bg-background px-4 py-3">
+      <div className="sticky top-14 z-30 flex items-center gap-4 border-b border-border bg-background px-4 py-3">
         <Link
           href="/"
           className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
