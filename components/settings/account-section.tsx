@@ -220,8 +220,8 @@ export function AccountSection({
       <div className="space-y-2">
         <p className="text-sm font-medium text-destructive">Delete account</p>
         <p className="text-xs text-muted-foreground">
-          Permanently removes your account, posts, and all data. This can't be
-          undone.
+          Permanently removes your account, posts, and all data. This can&apos;t
+          be undone.
         </p>
         <Dialog
           onOpenChange={(o) => {

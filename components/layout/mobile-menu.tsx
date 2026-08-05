@@ -65,31 +65,29 @@ function MenuRow({
 }
 
 /**
- * Mobile-only slide-out navigation drawer. Coexists with the bottom nav as an
- * additional way to get around. Radix Dialog gives the overlay, focus trap,
- * Escape, scroll-lock and tap-outside-to-close; we add a left slide animation
- * and swipe-left-to-close on top.
+ * Slide-out navigation drawer. Opened from the mobile top bar (variant
+ * "topbar") and the desktop left sidebar (variant "sidebar"), it coexists with
+ * the bottom nav / sidebar as an additional way to get around. Radix Dialog
+ * gives the overlay, focus trap, Escape, scroll-lock and tap-outside-to-close;
+ * we add a left slide animation and swipe-left-to-close on top.
  */
-export function MobileMenu({ profile }: { profile: Profile }) {
+export function MobileMenu({
+  profile,
+  variant = "topbar",
+}: {
+  profile: Profile;
+  variant?: "topbar" | "sidebar";
+}) {
   const [open, setOpen] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { unreadCount: unreadNotifications } = useNotifications();
   const { unreadCount: unreadMessages } = useMessages();
 
-  // Close on route change (covers the search submit, which navigates) and
-  // whenever the viewport grows to desktop, where the drawer never applies.
+  // Close on route change (also covers the search submit, which navigates).
   React.useEffect(() => {
     setOpen(false);
   }, [pathname]);
-
-  React.useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const close = () => mq.matches && setOpen(false);
-    close();
-    mq.addEventListener("change", close);
-    return () => mq.removeEventListener("change", close);
-  }, []);
 
   // Swipe-left past a small threshold closes the drawer -- but only when the
   // gesture is dominantly horizontal, so a vertical scroll that drifts left
@@ -115,16 +113,26 @@ export function MobileMenu({ profile }: { profile: Profile }) {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button
-          aria-label="Open menu"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+        {variant === "sidebar" ? (
+          <button
+            aria-label="Open menu"
+            className="flex items-center gap-4 rounded-full px-3 py-2.5 text-xl text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Menu className="h-6 w-6" />
+            <span className="sr-only xl:not-sr-only xl:inline">Menu</span>
+          </button>
+        ) : (
+          <button
+            aria-label="Open menu"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 lg:hidden" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
           ref={contentRef}
           tabIndex={-1}
@@ -137,7 +145,7 @@ export function MobileMenu({ profile }: { profile: Profile }) {
             e.preventDefault();
             contentRef.current?.focus();
           }}
-          className="fixed inset-y-0 left-0 z-50 flex h-dvh w-[230px] flex-col gap-3 overflow-y-auto border-r border-border bg-surface-1 p-3 shadow-xl outline-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden"
+          className="fixed inset-y-0 left-0 z-50 flex h-dvh w-[230px] flex-col gap-3 overflow-y-auto border-r border-border bg-surface-1 p-3 shadow-xl outline-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
         >
           <Dialog.Title className="sr-only">Navigation menu</Dialog.Title>
           <Dialog.Description className="sr-only">

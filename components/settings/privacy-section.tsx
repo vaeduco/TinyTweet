@@ -107,8 +107,8 @@ export function PrivacySection({
         <p className="text-sm font-medium">Blocked accounts</p>
         {blocked.length === 0 ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            You haven't blocked anyone. Blocked people can't view your profile,
-            follow, or message you.
+            You haven&apos;t blocked anyone. Blocked people can&apos;t view your
+            profile, follow, or message you.
           </p>
         ) : (
           <ul className="mt-2 space-y-2">

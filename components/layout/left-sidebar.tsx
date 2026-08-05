@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationsNavItem } from "@/components/notifications/notifications-nav-item";
 import { MessagesNavItem } from "@/components/messages/messages-nav-item";
+import { MobileMenu } from "@/components/layout/mobile-menu";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { signOut } from "@/app/auth/actions";
@@ -97,6 +98,7 @@ export function LeftSidebar({ profile }: { profile: Profile | null }) {
           <span className="hidden xl:inline">{APP_NAME}</span>
         </Link>
 
+        {profile && <MobileMenu profile={profile} variant="sidebar" />}
         <NavRow href="/" label="Home" icon={Home} active={isActive("/")} />
         <NavRow
           href="/search"

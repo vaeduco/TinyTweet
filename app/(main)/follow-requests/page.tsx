@@ -35,7 +35,8 @@ export default async function FollowRequestsPage() {
         <div className="px-6 py-16 text-center">
           <p className="text-lg font-bold">No follow requests</p>
           <p className="mx-auto mt-1 max-w-xs text-muted-foreground">
-            When someone asks to follow your private account, it'll show up here.
+            When someone asks to follow your private account, it&apos;ll show up
+            here.
           </p>
         </div>
       ) : (
