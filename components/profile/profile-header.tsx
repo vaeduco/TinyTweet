@@ -67,7 +67,7 @@ export function ProfileHeader({
                   <MessageButton targetId={profile.id} />
                   <FollowButton
                     targetUserId={profile.id}
-                    initialFollowing={profile.followed_by_me}
+                    initialStatus={profile.follow_status}
                   />
                 </>
               )}

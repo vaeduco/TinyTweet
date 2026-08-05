@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Lock } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -36,11 +37,24 @@ export default async function ProfilePage({
   const posts = await getUserPosts(supabase, profile.id, user?.id ?? null);
   const isOwner = !!user && user.id === profile.id;
 
+  const locked =
+    stats.is_private && !isOwner && stats.follow_status !== "accepted";
+
   return (
     <div>
       <ProfileHeader profile={stats} isOwner={isOwner} isAuthed={!!user} />
 
-      {posts.length === 0 ? (
+      {locked ? (
+        <div className="px-6 py-16 text-center">
+          <Lock className="mx-auto h-7 w-7 text-muted-foreground" />
+          <p className="mt-3 text-lg font-bold">This account is private</p>
+          <p className="mx-auto mt-1 max-w-xs text-muted-foreground">
+            {stats.follow_status === "pending"
+              ? "Your follow request is pending — you'll see their posts once it's approved."
+              : "Follow this account to see their posts."}
+          </p>
+        </div>
+      ) : posts.length === 0 ? (
         <div className="px-6 py-16 text-center">
           <p className="text-lg font-bold">No posts yet</p>
           <p className="mt-1 text-muted-foreground">

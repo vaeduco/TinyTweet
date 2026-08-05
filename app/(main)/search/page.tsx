@@ -6,6 +6,7 @@ import { SearchBar } from "@/components/search-bar";
 import { UserCard } from "@/components/user-card";
 import { PostCard } from "@/components/post-card";
 import { cn } from "@/lib/utils";
+import type { FollowState } from "@/lib/types";
 
 export const metadata = { title: "Search" };
 export const dynamic = "force-dynamic";
@@ -86,17 +87,17 @@ async function PeopleResults({
   const supabase = await createClient();
   const users = await searchUsers(supabase, query);
 
-  let followedSet = new Set<string>();
+  const followStatus = new Map<string, FollowState>();
   if (viewerId && users.length > 0) {
     const { data } = await supabase
       .from("follows")
-      .select("following_id")
+      .select("following_id, status")
       .eq("follower_id", viewerId)
       .in(
         "following_id",
         users.map((u) => u.id)
       );
-    followedSet = new Set((data ?? []).map((f) => f.following_id));
+    for (const f of data ?? []) followStatus.set(f.following_id, f.status);
   }
 
   if (users.length === 0) {
@@ -117,7 +118,7 @@ async function PeopleResults({
           key={u.id}
           profile={u}
           currentUserId={viewerId}
-          initialFollowing={followedSet.has(u.id)}
+          initialStatus={followStatus.get(u.id) ?? "none"}
         />
       ))}
     </div>

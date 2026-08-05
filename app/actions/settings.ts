@@ -137,6 +137,22 @@ export async function setDmPrivacy(value: DmPrivacy): Promise<Result> {
   return {};
 }
 
+export async function setPrivate(value: boolean): Promise<Result> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  // RPC: sets is_private and, when going public, accepts outstanding requests.
+  const { error } = await supabase.rpc("set_account_private", {
+    p_value: value,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return {};
+}
+
 export async function blockUser(targetId: string): Promise<Result> {
   const supabase = await createClient();
   const {

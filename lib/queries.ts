@@ -3,6 +3,7 @@ import type {
   Conversation,
   ConversationWithMeta,
   Database,
+  FollowState,
   MessageWithSender,
   NotificationWithActor,
   Poll,
@@ -134,7 +135,8 @@ export async function getFollowingIds(
   const { data } = await client
     .from("follows")
     .select("following_id")
-    .eq("follower_id", userId);
+    .eq("follower_id", userId)
+    .eq("status", "accepted");
   return (data ?? []).map((f) => f.following_id);
 }
 
@@ -256,28 +258,23 @@ export async function getProfileWithStats(
   profile: Profile,
   viewerId: string | null
 ): Promise<ProfileWithStats> {
-  const [followers, following, postsCount] = await Promise.all([
-    client
-      .from("follows")
-      .select("*", { count: "exact", head: true })
-      .eq("following_id", profile.id),
-    client
-      .from("follows")
-      .select("*", { count: "exact", head: true })
-      .eq("follower_id", profile.id),
-    client
-      .from("posts")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", profile.id),
-  ]);
+  // Counts come from a SECURITY DEFINER RPC so they are accurate and identical
+  // for every viewer. The follows/posts SELECT policies deliberately hide the
+  // underlying rows from non-approved viewers, which would otherwise make a
+  // per-viewer count(*) undercount (even a public account would lose its
+  // private followers from the tally).
+  const { data: countRows } = await client.rpc("get_profile_counts", {
+    p_profile: profile.id,
+  });
+  const counts = countRows?.[0];
 
-  let followed_by_me = false;
+  let follow_status: FollowState = "none";
   let blocked_by_me = false;
   if (viewerId && viewerId !== profile.id) {
     const [{ data: followRow }, { data: blockRow }] = await Promise.all([
       client
         .from("follows")
-        .select("following_id")
+        .select("status")
         .eq("follower_id", viewerId)
         .eq("following_id", profile.id)
         .maybeSingle(),
@@ -288,18 +285,39 @@ export async function getProfileWithStats(
         .eq("blocked_id", profile.id)
         .maybeSingle(),
     ]);
-    followed_by_me = !!followRow;
+    follow_status = followRow?.status ?? "none";
     blocked_by_me = !!blockRow;
   }
 
   return {
     ...profile,
-    followers_count: followers.count ?? 0,
-    following_count: following.count ?? 0,
-    posts_count: postsCount.count ?? 0,
-    followed_by_me,
+    followers_count: Number(counts?.followers_count ?? 0),
+    following_count: Number(counts?.following_count ?? 0),
+    posts_count: Number(counts?.posts_count ?? 0),
+    followed_by_me: follow_status === "accepted",
+    follow_status,
     blocked_by_me,
   };
+}
+
+/** Pending incoming follow requests (for the owner's requests page), newest first. */
+export async function getFollowRequests(
+  client: Client,
+  userId: string
+): Promise<Profile[]> {
+  const { data: rows } = await client
+    .from("follows")
+    .select("follower_id")
+    .eq("following_id", userId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  const ids = (rows ?? []).map((r) => r.follower_id);
+  if (ids.length === 0) return [];
+
+  const { data } = await client.from("profiles").select("*").in("id", ids);
+  const byId = new Map(((data ?? []) as Profile[]).map((p) => [p.id, p]));
+  return ids.map((id) => byId.get(id)).filter((p): p is Profile => !!p);
 }
 
 /** Profiles the viewer has blocked (for the settings block list). */
@@ -427,7 +445,23 @@ export async function getWhoToFollow(
   const exclude = new Set<string>();
   if (viewerId) {
     exclude.add(viewerId);
-    for (const id of await getFollowingIds(client, viewerId)) exclude.add(id);
+    // Exclude EVERY existing relationship (pending requests included), so a
+    // privately-requested account is never re-suggested with a "Follow" button
+    // whose click would silently cancel the request.
+    const { data: rels } = await client
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", viewerId);
+    for (const r of rels ?? []) exclude.add(r.following_id);
+
+    // Exclude accounts the viewer has blocked: following one is rejected by RLS
+    // (follows_insert_self checks is_blocked_by), so suggesting it only yields a
+    // confusing error toast.
+    const { data: blocked } = await client
+      .from("blocks")
+      .select("blocked_id")
+      .eq("blocker_id", viewerId);
+    for (const b of blocked ?? []) exclude.add(b.blocked_id);
   }
 
   // Over-fetch a small batch and filter self/followed in JS, so the exclude

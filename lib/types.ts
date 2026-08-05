@@ -15,6 +15,7 @@ export type Profile = {
   notify_replies: boolean;
   notify_mentions: boolean;
   dm_privacy: DmPrivacy;
+  is_private: boolean;
   created_at: string;
   updated_at: string;
   last_seen_at: string | null;
@@ -91,13 +92,23 @@ export type PollWithMeta = Poll & {
   total_votes: number;
 };
 
+export type FollowStatus = "pending" | "accepted";
+/** The viewer's follow state toward another account. */
+export type FollowState = "none" | FollowStatus;
+
 export type Follow = {
   follower_id: string;
   following_id: string;
+  status: FollowStatus;
   created_at: string;
 };
 
-export type NotificationType = "follow" | "like" | "reply" | "mention";
+export type NotificationType =
+  | "follow"
+  | "follow_request"
+  | "like"
+  | "reply"
+  | "mention";
 
 export type Notification = {
   id: string;
@@ -195,6 +206,8 @@ export type ProfileWithStats = Profile & {
   following_count: number;
   posts_count: number;
   followed_by_me: boolean;
+  /** The viewer's follow state toward this profile (none / pending / accepted). */
+  follow_status: FollowState;
   blocked_by_me: boolean;
 };
 
@@ -219,6 +232,7 @@ export type Database = {
           notify_replies?: boolean;
           notify_mentions?: boolean;
           dm_privacy?: DmPrivacy;
+          is_private?: boolean;
           created_at?: string;
           updated_at?: string;
           last_seen_at?: string | null;
@@ -312,6 +326,7 @@ export type Database = {
         Insert: {
           follower_id: string;
           following_id: string;
+          status?: FollowStatus;
           created_at?: string;
         };
         Update: Partial<Follow> & Timestamped;
@@ -442,6 +457,26 @@ export type Database = {
       block_user: {
         Args: { p_target: string };
         Returns: undefined;
+      };
+      approve_follow: {
+        Args: { p_requester: string };
+        Returns: undefined;
+      };
+      reject_follow: {
+        Args: { p_requester: string };
+        Returns: undefined;
+      };
+      set_account_private: {
+        Args: { p_value: boolean };
+        Returns: undefined;
+      };
+      get_profile_counts: {
+        Args: { p_profile: string };
+        Returns: {
+          followers_count: number;
+          following_count: number;
+          posts_count: number;
+        }[];
       };
     };
     Enums: Record<string, never>;

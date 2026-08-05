@@ -12,6 +12,7 @@ import { useNotifications } from "@/components/notifications/notifications-provi
 
 const ACTION_TEXT: Record<NotificationType, string> = {
   follow: "followed you",
+  follow_request: "requested to follow you",
   like: "liked your post",
   reply: "replied to your post",
   mention: "mentioned you",
@@ -21,6 +22,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
   const common = "h-4 w-4";
   switch (type) {
     case "follow":
+    case "follow_request":
       return <UserPlus className={cn(common, "text-primary")} />;
     case "like":
       return <Heart className={cn(common, "fill-current text-rose-500")} />;
@@ -38,7 +40,12 @@ function NotificationRow({
   n: NotificationWithActor;
   onSelect: () => void;
 }) {
-  const href = n.reference_id ? `/post/${n.reference_id}` : `/${n.actor.username}`;
+  const href =
+    n.type === "follow_request"
+      ? "/follow-requests"
+      : n.reference_id
+      ? `/post/${n.reference_id}`
+      : `/${n.actor.username}`;
   const name = n.actor.display_name || n.actor.username;
 
   return (

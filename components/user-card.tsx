@@ -3,16 +3,16 @@ import Link from "next/link";
 import { UserAvatar } from "@/components/user-avatar";
 import { FollowButton } from "@/components/follow-button";
 import { renderContent } from "@/lib/parse";
-import type { Profile } from "@/lib/types";
+import type { FollowState, Profile } from "@/lib/types";
 
 export function UserCard({
   profile,
   currentUserId,
-  initialFollowing,
+  initialStatus = "none",
 }: {
   profile: Profile;
   currentUserId: string | null;
-  initialFollowing: boolean;
+  initialStatus?: FollowState;
 }) {
   const profileHref = `/${profile.username}`;
   const showFollow = currentUserId != null && currentUserId !== profile.id;
@@ -44,7 +44,7 @@ export function UserCard({
             <div className="shrink-0">
               <FollowButton
                 targetUserId={profile.id}
-                initialFollowing={initialFollowing}
+                initialStatus={initialStatus}
                 size="sm"
               />
             </div>

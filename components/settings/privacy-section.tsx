@@ -2,23 +2,45 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
-import { SectionCard, SettingRow, SegmentedControl } from "@/components/settings/ui";
-import { setDmPrivacy, unblockUser } from "@/app/actions/settings";
+import {
+  SectionCard,
+  SettingRow,
+  SegmentedControl,
+  Switch,
+} from "@/components/settings/ui";
+import { setPrivate, setDmPrivacy, unblockUser } from "@/app/actions/settings";
 import type { DmPrivacy, Profile } from "@/lib/types";
 
 export function PrivacySection({
   profile,
   blocked: initialBlocked,
+  requestCount,
 }: {
   profile: Profile;
   blocked: Profile[];
+  requestCount: number;
 }) {
+  const router = useRouter();
+  const [priv, setPriv] = React.useState(profile.is_private ?? false);
   const [dm, setDm] = React.useState<DmPrivacy>(profile.dm_privacy);
   const [blocked, setBlocked] = React.useState<Profile[]>(initialBlocked);
+
+  async function onPrivateChange(next: boolean) {
+    const prev = priv;
+    setPriv(next); // optimistic
+    const res = await setPrivate(next);
+    if (res.error) {
+      setPriv(prev);
+      toast.error(res.error);
+    } else {
+      router.refresh(); // reflect auto-accepted requests when going public
+    }
+  }
 
   async function onDmChange(next: DmPrivacy) {
     const prev = dm;
@@ -46,6 +68,29 @@ export function PrivacySection({
 
   return (
     <SectionCard title="Privacy">
+      <SettingRow
+        label="Private account"
+        hint="Only approved followers can see your posts"
+      >
+        <Switch
+          checked={priv}
+          onChange={onPrivateChange}
+          label="Private account"
+        />
+      </SettingRow>
+
+      {(requestCount > 0 || priv) && (
+        <Link
+          href="/follow-requests"
+          className="flex items-center justify-between rounded-lg bg-surface-2/50 px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-2"
+        >
+          <span>Follow requests</span>
+          <span className="text-muted-foreground">
+            {requestCount > 0 ? requestCount : "View"}
+          </span>
+        </Link>
+      )}
+
       <SettingRow label="Who can message you">
         <SegmentedControl<DmPrivacy>
           value={dm}

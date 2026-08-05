@@ -79,7 +79,7 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
                 {viewerId && (
                   <FollowButton
                     targetUserId={u.id}
-                    initialFollowing={false}
+                    initialStatus="none"
                     size="sm"
                   />
                 )}

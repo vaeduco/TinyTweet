@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { getBlockedProfiles } from "@/lib/queries";
+import { getBlockedProfiles, getFollowRequests } from "@/lib/queries";
 import { AccountSection } from "@/components/settings/account-section";
 import { PrivacySection } from "@/components/settings/privacy-section";
 import { NotificationSection } from "@/components/settings/notification-section";
@@ -26,7 +26,10 @@ export default async function SettingsPage() {
     .eq("id", user.id)
     .single();
   const profile = profileData as Profile;
-  const blocked = await getBlockedProfiles(supabase, user.id);
+  const [blocked, requests] = await Promise.all([
+    getBlockedProfiles(supabase, user.id),
+    getFollowRequests(supabase, user.id),
+  ]);
 
   return (
     <div>
@@ -43,7 +46,11 @@ export default async function SettingsPage() {
 
       <div className="flex flex-col gap-2 p-2">
         <AccountSection profile={profile} email={user.email ?? ""} />
-        <PrivacySection profile={profile} blocked={blocked} />
+        <PrivacySection
+          profile={profile}
+          blocked={blocked}
+          requestCount={requests.length}
+        />
         <NotificationSection profile={profile} />
         <AppearanceSection />
       </div>
