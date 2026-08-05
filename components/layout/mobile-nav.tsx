@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationsNavItem } from "@/components/notifications/notifications-nav-item";
 import { MessagesNavItem } from "@/components/messages/messages-nav-item";
+import { MobileMenu } from "@/components/layout/mobile-menu";
 import { ComposeModalButton } from "@/components/compose-modal";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
@@ -34,7 +35,8 @@ import type { Profile } from "@/lib/types";
 export function MobileTopBar({ profile }: { profile: Profile | null }) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4 lg:hidden">
-      <div className="flex flex-1 items-center justify-start">
+      <div className="flex flex-1 items-center justify-start gap-1">
+        {profile && <MobileMenu profile={profile} />}
         {profile ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

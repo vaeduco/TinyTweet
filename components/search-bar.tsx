@@ -10,9 +10,12 @@ import { cn } from "@/lib/utils";
 export function SearchBar({
   className,
   defaultValue = "",
+  onSubmitted,
 }: {
   className?: string;
   defaultValue?: string;
+  /** Called after a search is submitted (e.g. to close a containing menu). */
+  onSubmitted?: () => void;
 }) {
   const router = useRouter();
   const [q, setQ] = React.useState(defaultValue);
@@ -20,7 +23,10 @@ export function SearchBar({
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const term = q.trim();
-    if (term) router.push(`/search?q=${encodeURIComponent(term)}`);
+    if (term) {
+      router.push(`/search?q=${encodeURIComponent(term)}`);
+      onSubmitted?.();
+    }
   }
 
   return (
