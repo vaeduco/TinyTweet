@@ -9,6 +9,10 @@ import { Label } from "@/components/ui/label";
 import { signIn, signUp } from "@/app/auth/actions";
 import { validateUsername } from "@/lib/validation";
 
+/** Cozy warm input styling shared across the auth fields. */
+const inputClassName =
+  "h-11 rounded-[14px] border-[#d9770620] bg-surface-2 px-4 py-3 focus-visible:ring-2 focus-visible:ring-[#d97706] focus-visible:ring-offset-0";
+
 export function AuthForm({
   mode,
   initialError,
@@ -68,6 +72,7 @@ export function AuthForm({
               name="username"
               autoComplete="username"
               placeholder="jane_doe"
+              className={inputClassName}
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               required
@@ -82,6 +87,7 @@ export function AuthForm({
               id="displayName"
               name="displayName"
               placeholder="Jane Doe"
+              className={inputClassName}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
             />
@@ -97,6 +103,7 @@ export function AuthForm({
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
+          className={inputClassName}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -111,6 +118,7 @@ export function AuthForm({
           type="password"
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           placeholder="••••••••"
+          className={inputClassName}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -129,7 +137,11 @@ export function AuthForm({
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button
+        type="submit"
+        disabled={pending}
+        className="h-11 w-full rounded-[22px] bg-[#d97706] text-white shadow-[0_4px_14px_rgba(217,119,6,0.3)] hover:bg-[#c2670a]"
+      >
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}
         {mode === "login" ? "Log in" : "Create account"}
       </Button>

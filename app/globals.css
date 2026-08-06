@@ -10,6 +10,7 @@
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     /* Surface & accent tokens for the borderless card system. */
+    --surface-0: #faf6ef; /* warm page base (raw color; used in the auth backdrop) */
     --surface-1: 0 0% 100%; /* elevated card surface (composer, post cards) */
     --surface-2: 214.3 31.8% 91%; /* control / disabled surface */
     --text-accent: 203 89% 53%;
@@ -39,6 +40,7 @@
     --card-foreground: 210 40% 98%;
     /* Surface sits clearly above the near-black page (fill carries elevation,
        since a drop shadow is invisible on a dark background). */
+    --surface-0: #0c0a08; /* warm near-black page base (auth backdrop) */
     --surface-1: 222.2 28% 12%;
     --surface-2: 217.2 32.6% 17.5%;
     --text-accent: 203 89% 53%;

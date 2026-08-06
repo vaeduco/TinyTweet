@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AuthForm } from "@/components/auth-form";
+import { CozyBird } from "@/components/cozy-bird";
 
 export const metadata = { title: "Sign up" };
 
@@ -15,14 +16,12 @@ export default async function SignupPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <div className="text-4xl" aria-hidden>
-          🐦
-        </div>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight">
-          Join TinyTweet
+        <CozyBird className="mx-auto" />
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+          Make yourself at home
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Create an account to start posting
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Create your cozy corner of TinyTweet
         </p>
       </div>
 
@@ -30,7 +29,10 @@ export default async function SignupPage() {
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-primary hover:underline">
+        <Link
+          href="/login"
+          className="font-semibold text-[#b45309] hover:underline dark:text-[#f59e0b]"
+        >
           Log in
         </Link>
       </p>
