@@ -140,7 +140,7 @@ export function AuthForm({
       <Button
         type="submit"
         disabled={pending}
-        className="h-11 w-full rounded-[22px] bg-[#d97706] text-white shadow-[0_4px_14px_rgba(217,119,6,0.3)] hover:bg-[#c2670a]"
+        className="h-11 w-full rounded-[22px] bg-[#fdba74] text-[#451a03] shadow-[0_4px_14px_rgba(217,119,6,0.3)] hover:bg-[#fb923c]"
       >
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}
         {mode === "login" ? "Log in" : "Create account"}
