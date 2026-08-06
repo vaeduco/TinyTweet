@@ -28,6 +28,25 @@ export function AuthForm({
   const [message, setMessage] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
+  // Controlled state already starts empty on a fresh mount (so a fresh visit or
+  // the post-sign-out redirect renders blank fields). This additionally clears
+  // anything a bfcache back/forward restore might bring back, so a signed-out
+  // user never sees the previous session's email/password.
+  React.useEffect(() => {
+    const clearOnRestore = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        setEmail("");
+        setPassword("");
+        setUsername("");
+        setDisplayName("");
+        setError(null);
+        setMessage(null);
+      }
+    };
+    window.addEventListener("pageshow", clearOnRestore);
+    return () => window.removeEventListener("pageshow", clearOnRestore);
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -101,8 +120,8 @@ export function AuthForm({
           id="email"
           name="email"
           type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
+          autoComplete={mode === "login" ? "off" : "email"}
+          placeholder="Email Address"
           className={inputClassName}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -116,8 +135,8 @@ export function AuthForm({
           id="password"
           name="password"
           type="password"
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          placeholder="••••••••"
+          autoComplete={mode === "login" ? "off" : "new-password"}
+          placeholder="Password"
           className={inputClassName}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
