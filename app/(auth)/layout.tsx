@@ -1,3 +1,5 @@
+import { AuthBackground } from "@/components/auth-background";
+
 export default function AuthLayout({
   children,
 }: {
@@ -5,14 +7,11 @@ export default function AuthLayout({
 }) {
   return (
     <div
-      className="flex min-h-dvh items-center justify-center px-4 py-10"
-      style={{
-        backgroundColor: "var(--surface-0, #faf6ef)",
-        backgroundImage:
-          "linear-gradient(160deg, #78350f18, #92400e10, var(--surface-0, #faf6ef))",
-      }}
+      className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-10"
+      style={{ backgroundColor: "#0a0a12" }}
     >
-      <div className="w-full max-w-[400px] rounded-[24px] border border-[#d9770622] bg-surface-1 p-9 shadow-sm">
+      <AuthBackground />
+      <div className="relative z-10 w-full max-w-[400px] rounded-[24px] border border-[#d9770622] bg-surface-1 p-9 shadow-[0_16px_50px_-12px_rgba(0,0,0,0.6)] dark:border-white/10">
         {children}
       </div>
     </div>
