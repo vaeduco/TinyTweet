@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 import { UserAvatar } from "@/components/user-avatar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -96,7 +95,6 @@ export function TopBar({ profile }: { profile: Profile | null }) {
 
       <div className="flex flex-1 items-center justify-end gap-1">
         {profile && <NotificationsNavItem variant="icon" />}
-        <ThemeToggle />
       </div>
     </header>
   );
