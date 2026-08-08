@@ -274,7 +274,7 @@ export function PostCard({
             postId={post.id}
             currentUserId={currentUserId}
             initialSaved={post.saved_by_me}
-            initialFolderId={post.saved_folder_id}
+            initialCategoryId={post.saved_category_id}
           />
         </div>
       </div>

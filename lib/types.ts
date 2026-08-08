@@ -61,11 +61,11 @@ export type Like = {
 export type SavedPost = {
   user_id: string;
   post_id: string;
-  folder_id: string | null;
+  category_id: string | null;
   created_at: string;
 };
 
-export type BookmarkFolder = {
+export type BookmarkCategory = {
   id: string;
   user_id: string;
   name: string;
@@ -140,8 +140,8 @@ export type PostWithAuthor = Post & {
   liked_by_me: boolean;
   /** Whether the current viewer has bookmarked this post. */
   saved_by_me: boolean;
-  /** The folder the viewer saved it in (null = uncategorized, or not saved). */
-  saved_folder_id: string | null;
+  /** The category the viewer saved it in (null = uncategorized, or not saved). */
+  saved_category_id: string | null;
   /** The attached poll, or null if this post has none. */
   poll: PollWithMeta | null;
 };
@@ -289,10 +289,10 @@ export type Database = {
         Update: Partial<Like>;
         Relationships: [];
       };
-      bookmark_folders: {
-        Row: BookmarkFolder;
+      bookmark_categories: {
+        Row: BookmarkCategory;
         Insert: { id?: string; user_id: string; name: string; created_at?: string };
-        Update: Partial<BookmarkFolder>;
+        Update: Partial<BookmarkCategory>;
         Relationships: [];
       };
       saved_posts: {
@@ -300,7 +300,7 @@ export type Database = {
         Insert: {
           user_id: string;
           post_id: string;
-          folder_id?: string | null;
+          category_id?: string | null;
           created_at?: string;
         };
         Update: Partial<SavedPost>;

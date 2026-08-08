@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
-  BookmarkFolder,
+  BookmarkCategory,
   Conversation,
   ConversationWithMeta,
   Database,
@@ -110,19 +110,19 @@ async function withViewerMeta(
 
   let liked = new Set<string>();
   let saved = new Set<string>();
-  const savedFolder = new Map<string, string | null>();
+  const savedCategory = new Map<string, string | null>();
   if (viewerId) {
     const [{ data: likeRows }, { data: savedRows }] = await Promise.all([
       client.from("likes").select("post_id").eq("user_id", viewerId).in("post_id", ids),
       client
         .from("saved_posts")
-        .select("post_id, folder_id")
+        .select("post_id, category_id")
         .eq("user_id", viewerId)
         .in("post_id", ids),
     ]);
     liked = new Set((likeRows ?? []).map((l) => l.post_id));
     saved = new Set((savedRows ?? []).map((s) => s.post_id));
-    for (const s of savedRows ?? []) savedFolder.set(s.post_id, s.folder_id);
+    for (const s of savedRows ?? []) savedCategory.set(s.post_id, s.category_id);
   }
 
   const pollsByPost = await pollsPromise;
@@ -131,7 +131,7 @@ async function withViewerMeta(
     ...r,
     liked_by_me: liked.has(r.id),
     saved_by_me: saved.has(r.id),
-    saved_folder_id: savedFolder.get(r.id) ?? null,
+    saved_category_id: savedCategory.get(r.id) ?? null,
     poll: pollsByPost.get(r.id) ?? null,
   }));
 }
@@ -267,19 +267,19 @@ export async function getLikedPosts(
 }
 
 /**
- * Posts the viewer has bookmarked, most-recently-saved first. Pass a folderId
- * to show only that folder; omit it for all bookmarks.
+ * Posts the viewer has bookmarked, most-recently-saved first. Pass a categoryId
+ * to show only that category; omit it for all bookmarks.
  */
 export async function getSavedPosts(
   client: Client,
   userId: string,
-  folderId?: string
+  categoryId?: string
 ): Promise<PostWithAuthor[]> {
   let q = client
     .from("saved_posts")
     .select("post_id")
     .eq("user_id", userId);
-  if (folderId) q = q.eq("folder_id", folderId);
+  if (categoryId) q = q.eq("category_id", categoryId);
   const { data: savedRows } = await q
     .order("created_at", { ascending: false })
     .limit(LIST_LIMIT);
@@ -300,18 +300,18 @@ export async function getSavedPosts(
   return withViewerMeta(client, ordered, userId);
 }
 
-/** The viewer's bookmark folders, oldest first. */
-export async function getBookmarkFolders(
+/** The viewer's bookmark categories, oldest first. */
+export async function getBookmarkCategories(
   client: Client,
   userId: string
-): Promise<BookmarkFolder[]> {
+): Promise<BookmarkCategory[]> {
   const { data, error } = await client
-    .from("bookmark_folders")
+    .from("bookmark_categories")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as BookmarkFolder[];
+  return (data ?? []) as BookmarkCategory[];
 }
 
 export async function getPost(

@@ -23,20 +23,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { BookmarkFolder } from "@/lib/types";
-import { createFolder, deleteFolder, renameFolder } from "@/app/actions/bookmarks";
+import type { BookmarkCategory } from "@/lib/types";
+import { createCategory, deleteCategory, renameCategory } from "@/app/actions/bookmarks";
 
 type DialogKind = null | "new" | "rename" | "delete";
 
-export function BookmarkFolderBar({
-  folders,
-  activeFolderId,
+export function BookmarkCategoryBar({
+  categories,
+  activeCategoryId,
 }: {
-  folders: BookmarkFolder[];
-  activeFolderId?: string;
+  categories: BookmarkCategory[];
+  activeCategoryId?: string;
 }) {
   const router = useRouter();
-  const activeFolder = folders.find((f) => f.id === activeFolderId);
+  const activeCategory = categories.find((f) => f.id === activeCategoryId);
   const [dialog, setDialog] = React.useState<DialogKind>(null);
   const [name, setName] = React.useState("");
   const [pending, setPending] = React.useState(false);
@@ -49,34 +49,34 @@ export function BookmarkFolderBar({
 
   async function onCreate() {
     setPending(true);
-    const res = await createFolder(name);
+    const res = await createCategory(name);
     setPending(false);
     if (res.error) return toast.error(res.error);
     setDialog(null);
-    toast.success("Folder created.");
-    if (res.folder) router.push(`/bookmarks?folder=${res.folder.id}`);
+    toast.success("Category created.");
+    if (res.category) router.push(`/bookmarks?category=${res.category.id}`);
     router.refresh();
   }
 
   async function onRename() {
-    if (!activeFolder) return;
+    if (!activeCategory) return;
     setPending(true);
-    const res = await renameFolder(activeFolder.id, name);
+    const res = await renameCategory(activeCategory.id, name);
     setPending(false);
     if (res.error) return toast.error(res.error);
     setDialog(null);
-    toast.success("Folder renamed.");
+    toast.success("Category renamed.");
     router.refresh();
   }
 
   async function onDelete() {
-    if (!activeFolder) return;
+    if (!activeCategory) return;
     setPending(true);
-    const res = await deleteFolder(activeFolder.id);
+    const res = await deleteCategory(activeCategory.id);
     setPending(false);
     if (res.error) return toast.error(res.error);
     setDialog(null);
-    toast.success("Folder deleted — its posts moved to Uncategorized.");
+    toast.success("Category deleted — its posts moved to Uncategorized.");
     router.push("/bookmarks");
     router.refresh();
   }
@@ -92,14 +92,14 @@ export function BookmarkFolderBar({
   return (
     <div className="flex items-center gap-2 border-b border-border bg-background px-3 py-2.5">
       <div className="flex flex-1 items-center gap-2 overflow-x-auto">
-        <Link href="/bookmarks" className={chipClass(!activeFolderId)}>
+        <Link href="/bookmarks" className={chipClass(!activeCategoryId)}>
           All Bookmarks
         </Link>
-        {folders.map((f) => (
+        {categories.map((f) => (
           <Link
             key={f.id}
-            href={`/bookmarks?folder=${f.id}`}
-            className={chipClass(f.id === activeFolderId)}
+            href={`/bookmarks?category=${f.id}`}
+            className={chipClass(f.id === activeCategoryId)}
           >
             {f.name}
           </Link>
@@ -113,18 +113,18 @@ export function BookmarkFolderBar({
           className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
         >
           <Plus className="h-4 w-4" />
-          New folder
+          New category
         </button>
       </div>
 
-      {activeFolder && (
+      {activeCategory && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 shrink-0 text-muted-foreground"
-              aria-label="Folder options"
+              aria-label="Category options"
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -133,12 +133,12 @@ export function BookmarkFolderBar({
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault();
-                setName(activeFolder.name);
+                setName(activeCategory.name);
                 setDialog("rename");
               }}
             >
               <Pencil className="mr-2 h-4 w-4" />
-              Rename folder
+              Rename category
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
@@ -148,7 +148,7 @@ export function BookmarkFolderBar({
               }}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete folder
+              Delete category
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -161,13 +161,13 @@ export function BookmarkFolderBar({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialog === "rename" ? "Rename folder" : "New folder"}
+              {dialog === "rename" ? "Rename category" : "New category"}
             </DialogTitle>
           </DialogHeader>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Folder name"
+            placeholder="Category name"
             maxLength={50}
             autoFocus
             onKeyDown={(e) => {
@@ -195,9 +195,9 @@ export function BookmarkFolderBar({
       <Dialog open={dialog === "delete"} onOpenChange={(o) => !o && close()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete folder?</DialogTitle>
+            <DialogTitle>Delete category?</DialogTitle>
             <DialogDescription>
-              &ldquo;{activeFolder?.name}&rdquo; will be deleted. The posts inside
+              &ldquo;{activeCategory?.name}&rdquo; will be deleted. The posts inside
               stay saved and move back to Uncategorized.
             </DialogDescription>
           </DialogHeader>
@@ -206,7 +206,7 @@ export function BookmarkFolderBar({
               Cancel
             </Button>
             <Button variant="destructive" onClick={onDelete} disabled={pending}>
-              Delete folder
+              Delete category
             </Button>
           </DialogFooter>
         </DialogContent>

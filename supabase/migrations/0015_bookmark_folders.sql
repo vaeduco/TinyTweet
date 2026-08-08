@@ -1,8 +1,22 @@
 -- ============================================================================
 -- TinyTweet — bookmark folders. Organise saved posts into user-owned folders;
 -- a null folder_id means "uncategorized". Everything is private to the owner.
--- Safe to re-run.
+--
+-- Superseded by 0016 (which renames folders -> categories). Run FORWARD ONLY:
+-- 0015 then 0016. Re-running 0015 alone is safe ONLY before 0016; the guard
+-- below aborts it once 0016 has run so it can't recreate the old table / column
+-- and silently clobber the category-ownership RLS.
 -- ============================================================================
+
+do $$ begin
+  if exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'bookmark_categories'
+  ) then
+    raise exception
+      'Migration 0015 is superseded by 0016 (bookmark_categories already exists). Do not re-run 0015; re-run 0016 instead.';
+  end if;
+end $$;
 
 create table if not exists public.bookmark_folders (
   id         uuid primary key default gen_random_uuid(),

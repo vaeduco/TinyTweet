@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bookmark, Check, Loader2 } from "lucide-react";
+import { Bookmark, Check, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -13,53 +13,74 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { BookmarkFolder } from "@/lib/types";
-import { listFolders, removeSave, saveToFolder } from "@/app/actions/bookmarks";
+import type { BookmarkCategory } from "@/lib/types";
+import {
+  createCategory,
+  listCategories,
+  removeSave,
+  saveToCategory,
+} from "@/app/actions/bookmarks";
 
 /**
- * Bookmark toggle with a folder picker. Clicking the icon opens a menu of the
- * viewer's folders (Uncategorized + each folder); picking one saves/moves the
- * post there, and a saved post also offers "Remove bookmark". Folders are
- * fetched lazily the first time the menu opens.
+ * Bookmark toggle with a "Saved in" category picker. Clicking the icon opens a
+ * menu of the viewer's categories (Uncategorized + each category); picking one
+ * saves/moves the post there. "Create new category" opens a small dialog to
+ * name one and immediately files the post into it. A saved post also offers
+ * "Remove bookmark". Categories are fetched lazily each time the menu opens.
  */
 export function BookmarkButton({
   postId,
   currentUserId,
   initialSaved,
-  initialFolderId,
+  initialCategoryId,
 }: {
   postId: string;
   currentUserId: string | null;
   initialSaved: boolean;
-  initialFolderId: string | null;
+  initialCategoryId: string | null;
 }) {
   const router = useRouter();
   const [saved, setSaved] = React.useState(initialSaved);
-  const [folderId, setFolderId] = React.useState<string | null>(initialFolderId);
-  const [folders, setFolders] = React.useState<BookmarkFolder[] | null>(null);
+  const [categoryId, setCategoryId] = React.useState<string | null>(
+    initialCategoryId
+  );
+  const [categories, setCategories] = React.useState<BookmarkCategory[] | null>(
+    null
+  );
   const [pending, setPending] = React.useState(false);
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [newName, setNewName] = React.useState("");
 
   async function onOpenChange(open: boolean) {
-    // Re-fetch every open so a folder renamed/deleted elsewhere isn't stale
+    // Re-fetch every open so a category renamed/deleted elsewhere isn't stale
     // (the old list stays visible during the await, so it doesn't flash empty).
-    if (open) setFolders(await listFolders());
+    if (open) setCategories(await listCategories());
   }
 
   async function save(target: string | null) {
     if (pending) return;
     setPending(true);
-    const prev = { saved, folderId };
+    const prev = { saved, categoryId };
     setSaved(true);
-    setFolderId(target);
-    const res = await saveToFolder(postId, target);
+    setCategoryId(target);
+    const res = await saveToCategory(postId, target);
     if (res.error) {
       setSaved(prev.saved);
-      setFolderId(prev.folderId);
+      setCategoryId(prev.categoryId);
       toast.error(res.error);
     } else {
       const name = target
-        ? folders?.find((f) => f.id === target)?.name ?? "folder"
+        ? categories?.find((c) => c.id === target)?.name ?? "category"
         : "Uncategorized";
       toast.success(`Saved to ${name}.`);
       router.refresh();
@@ -70,19 +91,48 @@ export function BookmarkButton({
   async function remove() {
     if (pending) return;
     setPending(true);
-    const prev = { saved, folderId };
+    const prev = { saved, categoryId };
     setSaved(false);
-    setFolderId(null);
+    setCategoryId(null);
     const res = await removeSave(postId);
     if (res.error) {
       setSaved(prev.saved);
-      setFolderId(prev.folderId);
+      setCategoryId(prev.categoryId);
       toast.error(res.error);
     } else {
       toast.success("Bookmark removed.");
       router.refresh();
     }
     setPending(false);
+  }
+
+  async function createAndSave() {
+    const name = newName.trim();
+    if (!name || pending) return;
+    setPending(true);
+    const res = await createCategory(name);
+    if (res.error || !res.category) {
+      toast.error(res.error ?? "Couldn't create the category.");
+      setPending(false);
+      return;
+    }
+    // The category now exists — reflect it locally and close the dialog before
+    // the save leg, so a failed save can't orphan it or duplicate it on retry.
+    const cat = res.category;
+    setCategories((cs) => [...(cs ?? []), cat]);
+    setCreateOpen(false);
+    setNewName("");
+
+    const saveRes = await saveToCategory(postId, cat.id);
+    setPending(false);
+    router.refresh();
+    if (saveRes.error) {
+      toast.error(`Created “${cat.name}”, but saving failed: ${saveRes.error}`);
+      return;
+    }
+    setSaved(true);
+    setCategoryId(cat.id);
+    toast.success(`Saved to ${cat.name}.`);
   }
 
   const icon = (
@@ -111,57 +161,108 @@ export function BookmarkButton({
   }
 
   return (
-    <DropdownMenu onOpenChange={onOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-pressed={saved}
-          aria-label={saved ? "Saved — change folder" : "Save"}
-        >
-          {icon}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>{saved ? "Saved in" : "Save to"}</DropdownMenuLabel>
-        <FolderRow
-          label="Uncategorized"
-          selected={saved && folderId === null}
-          pending={pending}
-          onPick={() => save(null)}
-        />
-        {folders === null ? (
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-          </div>
-        ) : (
-          folders.map((f) => (
-            <FolderRow
-              key={f.id}
-              label={f.name}
-              selected={saved && folderId === f.id}
-              pending={pending}
-              onPick={() => save(f.id)}
-            />
-          ))
-        )}
-        {saved && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
+    <>
+      <DropdownMenu onOpenChange={onOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-pressed={saved}
+            aria-label={saved ? "Saved — change category" : "Save"}
+          >
+            {icon}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>{saved ? "Saved in" : "Save to"}</DropdownMenuLabel>
+          <CategoryRow
+            label="Uncategorized"
+            selected={saved && categoryId === null}
+            pending={pending}
+            onPick={() => save(null)}
+          />
+          {categories === null ? (
+            <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </div>
+          ) : (
+            categories.map((c) => (
+              <CategoryRow
+                key={c.id}
+                label={c.name}
+                selected={saved && categoryId === c.id}
+                pending={pending}
+                onPick={() => save(c.id)}
+              />
+            ))
+          )}
+          <DropdownMenuItem
+            disabled={pending}
+            onSelect={() => {
+              setNewName("");
+              // Defer opening so it doesn't fight the closing menu's focus.
+              requestAnimationFrame(() => setCreateOpen(true));
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create new category
+          </DropdownMenuItem>
+          {saved && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={pending}
+                onSelect={() => remove()}
+              >
+                Remove bookmark
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          if (!pending) setCreateOpen(o);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create new category</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Category name"
+            maxLength={50}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                createAndSave();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
               disabled={pending}
-              onSelect={() => remove()}
             >
-              Remove bookmark
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              Cancel
+            </Button>
+            <Button onClick={createAndSave} disabled={pending || !newName.trim()}>
+              Create &amp; save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-function FolderRow({
+function CategoryRow({
   label,
   selected,
   pending,
