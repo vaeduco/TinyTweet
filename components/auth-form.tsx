@@ -67,7 +67,7 @@ export function AuthForm({
     setPending(true);
     const res =
       mode === "login"
-        ? await signIn({ email, password })
+        ? await signIn({ identifier: email, password })
         : await signUp({ email, password, username, displayName });
 
     // On success the server action redirects and this code never runs.
@@ -115,13 +115,15 @@ export function AuthForm({
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">
+          {mode === "login" ? "Email or Username" : "Email"}
+        </Label>
         <Input
           id="email"
           name="email"
-          type="email"
+          type={mode === "login" ? "text" : "email"}
           autoComplete={mode === "login" ? "off" : "email"}
-          placeholder="Email Address"
+          placeholder={mode === "login" ? "Email or Username" : "Email Address"}
           className={inputClassName}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
