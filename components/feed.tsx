@@ -126,6 +126,7 @@ export function Feed({
                     author: author as Profile,
                     liked_by_me: false,
                     saved_by_me: false,
+                    saved_folder_id: null,
                     poll,
                   },
                   ...prev,

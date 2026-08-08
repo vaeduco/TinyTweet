@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Bell, Home, LogOut, Mail, Menu, Settings } from "lucide-react";
+import { Bell, Bookmark, Home, LogOut, Mail, Menu, Settings } from "lucide-react";
 
 import { SearchBar } from "@/components/search-bar";
 import { UserAvatar } from "@/components/user-avatar";
@@ -170,6 +170,12 @@ export function MobileMenu({ profile }: { profile: Profile }) {
               icon={Mail}
               active={isActive("/messages")}
               badge={unreadMessages}
+            />
+            <MenuRow
+              href="/bookmarks"
+              label="Bookmarks"
+              icon={Bookmark}
+              active={isActive("/bookmarks")}
             />
             <MenuRow
               href="/settings"

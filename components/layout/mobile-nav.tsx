@@ -59,9 +59,9 @@ export function TopBar({ profile }: { profile: Profile | null }) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/saved">
+                <Link href="/bookmarks">
                   <Bookmark className="mr-2 h-4 w-4" />
-                  Saved
+                  Bookmarks
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

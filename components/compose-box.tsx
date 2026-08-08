@@ -291,6 +291,7 @@ export function ComposeBox({
         author: profile,
         liked_by_me: false,
         saved_by_me: false,
+        saved_folder_id: null,
         poll: null,
       };
       onPosted(optimistic);

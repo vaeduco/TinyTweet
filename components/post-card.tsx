@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Bookmark,
   Heart,
   MessageCircle,
   MoreHorizontal,
@@ -24,12 +23,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PollCard } from "@/components/poll/poll-card";
+import { BookmarkButton } from "@/components/bookmark-button";
 import { renderContent } from "@/lib/parse";
 import { formatRelativeTime, formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { PostWithAuthor } from "@/lib/types";
 import { toggleLike } from "@/app/actions/likes";
-import { toggleSave } from "@/app/actions/saves";
 import { deletePost, togglePin } from "@/app/actions/posts";
 
 export function PostCard({
@@ -48,8 +47,6 @@ export function PostCard({
   const [liked, setLiked] = React.useState(post.liked_by_me);
   const [likeCount, setLikeCount] = React.useState(post.like_count);
   const [likePending, setLikePending] = React.useState(false);
-  const [saved, setSaved] = React.useState(post.saved_by_me);
-  const [savePending, setSavePending] = React.useState(false);
   const [deleted, setDeleted] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [pinPending, setPinPending] = React.useState(false);
@@ -125,26 +122,6 @@ export function PostCard({
     } catch {
       /* user cancelled share sheet — ignore */
     }
-  }
-
-  async function onSave() {
-    if (!currentUserId) {
-      toast.error("Sign in to save posts.");
-      return;
-    }
-    if (savePending) return;
-    setSavePending(true);
-
-    const prevSaved = saved;
-    setSaved(!prevSaved); // optimistic
-    const res = await toggleSave(post.id);
-    if (res.error) {
-      setSaved(prevSaved);
-      toast.error(res.error);
-    } else {
-      setSaved(res.saved);
-    }
-    setSavePending(false);
   }
 
   return (
@@ -293,22 +270,12 @@ export function PostCard({
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={onSave}
-            className={cn(
-              "group flex items-center gap-1.5 rounded-full text-sm transition-colors hover:text-primary",
-              saved && "text-primary"
-            )}
-            aria-pressed={saved}
-            aria-label={saved ? "Remove bookmark" : "Save"}
-          >
-            <span className="rounded-full p-1.5 group-hover:bg-primary/10">
-              <Bookmark
-                className={cn("h-[18px] w-[18px]", saved && "fill-current")}
-              />
-            </span>
-          </button>
+          <BookmarkButton
+            postId={post.id}
+            currentUserId={currentUserId}
+            initialSaved={post.saved_by_me}
+            initialFolderId={post.saved_folder_id}
+          />
         </div>
       </div>
     </article>
