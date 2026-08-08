@@ -71,6 +71,27 @@ export async function createPollPost(input: {
   return { postId: data as string };
 }
 
+/** Pin or unpin a post to the owner's profile (one pinned post per user). */
+export async function togglePin(
+  postId: string,
+  pinned: boolean
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const { error } = await supabase.rpc("set_pinned_post", {
+    p_post_id: postId,
+    p_pinned: pinned,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return {};
+}
+
 export async function deletePost(postId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {

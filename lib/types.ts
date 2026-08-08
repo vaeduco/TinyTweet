@@ -34,6 +34,8 @@ export type Post = {
   image_url: string | null;
   like_count: number;
   reply_count: number;
+  is_pinned: boolean;
+  pinned_at: string | null;
   created_at: string;
 };
 
@@ -249,6 +251,8 @@ export type Database = {
           image_url?: string | null;
           like_count?: number;
           reply_count?: number;
+          is_pinned?: boolean;
+          pinned_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Omit<Post, "id" | "user_id">>;
@@ -477,6 +481,10 @@ export type Database = {
           following_count: number;
           posts_count: number;
         }[];
+      };
+      set_pinned_post: {
+        Args: { p_post_id: string; p_pinned: boolean };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

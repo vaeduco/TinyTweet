@@ -6,9 +6,14 @@ import {
   getProfileByUsername,
   getProfileWithStats,
   getUserPosts,
+  getUserReplies,
+  getUserMediaPosts,
+  getLikedPosts,
 } from "@/lib/queries";
 import { PostCard } from "@/components/post-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
+import { ProfileTabs, type ProfileTab } from "@/components/profile/profile-tabs";
+import type { PostWithAuthor } from "@/lib/types";
 
 export async function generateMetadata({
   params,
@@ -19,12 +24,31 @@ export async function generateMetadata({
   return { title: `@${username}` };
 }
 
+const EMPTY: Record<ProfileTab, { title: string; body: string }> = {
+  posts: { title: "No posts yet", body: "When they post, it'll show up here." },
+  replies: {
+    title: "No replies yet",
+    body: "Posts they reply to will show up here.",
+  },
+  media: {
+    title: "No media yet",
+    body: "Posts with photos or GIFs will show up here.",
+  },
+  likes: { title: "No likes yet", body: "Posts they like will show up here." },
+};
+
 export default async function ProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { username } = await params;
+  const { tab } = await searchParams;
+  const activeTab: ProfileTab =
+    tab === "replies" || tab === "media" || tab === "likes" ? tab : "posts";
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,12 +57,23 @@ export default async function ProfilePage({
   const profile = await getProfileByUsername(supabase, username);
   if (!profile) notFound();
 
-  const stats = await getProfileWithStats(supabase, profile, user?.id ?? null);
-  const posts = await getUserPosts(supabase, profile.id, user?.id ?? null);
+  const viewerId = user?.id ?? null;
+  const stats = await getProfileWithStats(supabase, profile, viewerId);
   const isOwner = !!user && user.id === profile.id;
-
   const locked =
     stats.is_private && !isOwner && stats.follow_status !== "accepted";
+
+  let posts: PostWithAuthor[] = [];
+  if (!locked) {
+    posts =
+      activeTab === "replies"
+        ? await getUserReplies(supabase, profile.id, viewerId)
+        : activeTab === "media"
+        ? await getUserMediaPosts(supabase, profile.id, viewerId)
+        : activeTab === "likes"
+        ? await getLikedPosts(supabase, profile.id, viewerId)
+        : await getUserPosts(supabase, profile.id, viewerId);
+  }
 
   return (
     <div>
@@ -54,19 +89,32 @@ export default async function ProfilePage({
               : "Follow this account to see their posts."}
           </p>
         </div>
-      ) : posts.length === 0 ? (
-        <div className="px-6 py-16 text-center">
-          <p className="text-lg font-bold">No posts yet</p>
-          <p className="mt-1 text-muted-foreground">
-            When they post, it will show up here.
-          </p>
-        </div>
       ) : (
-        <div className="flex flex-col gap-2 p-2">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} currentUserId={user?.id ?? null} />
-          ))}
-        </div>
+        <>
+          <ProfileTabs username={username} active={activeTab} />
+
+          {posts.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <p className="text-lg font-bold">{EMPTY[activeTab].title}</p>
+              <p className="mt-1 text-muted-foreground">
+                {EMPTY[activeTab].body}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 p-2">
+              {posts.map((p) => (
+                <div key={p.id} className="space-y-1">
+                  {activeTab === "posts" && p.is_pinned && (
+                    <p className="flex items-center gap-1.5 px-1 text-xs font-semibold text-muted-foreground">
+                      <span aria-hidden>📌</span> Pinned
+                    </p>
+                  )}
+                  <PostCard post={p} currentUserId={viewerId} />
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

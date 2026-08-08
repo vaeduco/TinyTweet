@@ -8,6 +8,8 @@ import {
   Heart,
   MessageCircle,
   MoreHorizontal,
+  Pin,
+  PinOff,
   Share2,
   Trash2,
 } from "lucide-react";
@@ -28,7 +30,7 @@ import { cn } from "@/lib/utils";
 import type { PostWithAuthor } from "@/lib/types";
 import { toggleLike } from "@/app/actions/likes";
 import { toggleSave } from "@/app/actions/saves";
-import { deletePost } from "@/app/actions/posts";
+import { deletePost, togglePin } from "@/app/actions/posts";
 
 export function PostCard({
   post,
@@ -50,6 +52,7 @@ export function PostCard({
   const [savePending, setSavePending] = React.useState(false);
   const [deleted, setDeleted] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [pinPending, setPinPending] = React.useState(false);
 
   const isOwner = currentUserId != null && currentUserId === post.user_id;
   const profileHref = `/${author.username}`;
@@ -93,6 +96,21 @@ export function PostCard({
       toast.success("Post deleted.");
       router.refresh();
     }
+  }
+
+  async function onTogglePin() {
+    if (pinPending) return;
+    setPinPending(true);
+    const res = await togglePin(post.id, !post.is_pinned);
+    if (res.error) {
+      toast.error(res.error);
+    } else {
+      toast.success(
+        post.is_pinned ? "Unpinned from profile." : "Pinned to profile."
+      );
+      router.refresh();
+    }
+    setPinPending(false);
   }
 
   async function onShare() {
@@ -178,6 +196,25 @@ export function PostCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={pinPending}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      onTogglePin();
+                    }}
+                  >
+                    {post.is_pinned ? (
+                      <>
+                        <PinOff className="mr-2 h-4 w-4" />
+                        Unpin from profile
+                      </>
+                    ) : (
+                      <>
+                        <Pin className="mr-2 h-4 w-4" />
+                        Pin to profile
+                      </>
+                    )}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     disabled={isDeleting}

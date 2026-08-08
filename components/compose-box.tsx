@@ -285,6 +285,8 @@ export function ComposeBox({
         image_url: imageUrl,
         like_count: 0,
         reply_count: 0,
+        is_pinned: false,
+        pinned_at: null,
         created_at: new Date().toISOString(),
         author: profile,
         liked_by_me: false,

@@ -165,19 +165,97 @@ export async function getFeed(
   return { posts, relevantAuthorIds: authorIds };
 }
 
+/** The user's own posts, with any pinned post floated to the top. */
 export async function getUserPosts(
   client: Client,
   profileId: string,
   viewerId: string | null
 ): Promise<PostWithAuthor[]> {
-  const { data } = await client
+  const { data, error } = await client
     .from("posts")
     .select(POST_SELECT)
     .eq("user_id", profileId)
+    .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(LIST_LIMIT);
+  if (error) throw error;
 
   return withViewerMeta(client, (data ?? []) as unknown as RawPost[], viewerId);
+}
+
+/** Posts the user has replied to (distinct, most-recently-replied first). */
+export async function getUserReplies(
+  client: Client,
+  profileId: string,
+  viewerId: string | null
+): Promise<PostWithAuthor[]> {
+  const { data: replyRows, error } = await client
+    .from("replies")
+    .select("post_id, created_at")
+    .eq("user_id", profileId)
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
+  if (error) throw error;
+
+  // De-dupe while preserving reply-recency order.
+  const ids = [...new Set((replyRows ?? []).map((r) => r.post_id))];
+  if (ids.length === 0) return [];
+
+  const { data } = await client.from("posts").select(POST_SELECT).in("id", ids);
+  const byId = new Map(
+    ((data ?? []) as unknown as RawPost[]).map((r) => [r.id, r])
+  );
+  const ordered = ids
+    .map((id) => byId.get(id))
+    .filter((r): r is RawPost => !!r);
+
+  return withViewerMeta(client, ordered, viewerId);
+}
+
+/** The user's posts that include an image / GIF attachment. */
+export async function getUserMediaPosts(
+  client: Client,
+  profileId: string,
+  viewerId: string | null
+): Promise<PostWithAuthor[]> {
+  const { data, error } = await client
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("user_id", profileId)
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
+  if (error) throw error;
+
+  return withViewerMeta(client, (data ?? []) as unknown as RawPost[], viewerId);
+}
+
+/** Posts the user has liked (most-recently-liked first). */
+export async function getLikedPosts(
+  client: Client,
+  profileId: string,
+  viewerId: string | null
+): Promise<PostWithAuthor[]> {
+  const { data: likeRows, error } = await client
+    .from("likes")
+    .select("post_id")
+    .eq("user_id", profileId)
+    .order("created_at", { ascending: false })
+    .limit(LIST_LIMIT);
+  if (error) throw error;
+
+  const ids = (likeRows ?? []).map((l) => l.post_id);
+  if (ids.length === 0) return [];
+
+  const { data } = await client.from("posts").select(POST_SELECT).in("id", ids);
+  const byId = new Map(
+    ((data ?? []) as unknown as RawPost[]).map((r) => [r.id, r])
+  );
+  const ordered = ids
+    .map((id) => byId.get(id))
+    .filter((r): r is RawPost => !!r);
+
+  return withViewerMeta(client, ordered, viewerId);
 }
 
 /** Posts the viewer has bookmarked, most-recently-saved first. */
