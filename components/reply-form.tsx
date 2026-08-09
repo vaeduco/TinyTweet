@@ -23,10 +23,20 @@ export function ReplyForm({
   postId,
   profile,
   parentReplyId = null,
+  placeholder = "Post your reply",
+  autoFocus = false,
+  embedded = false,
+  onDone,
 }: {
   postId: string;
   profile: Profile | null;
   parentReplyId?: string | null;
+  placeholder?: string;
+  autoFocus?: boolean;
+  /** Compact, chrome-less styling for an inline reply nested under a comment. */
+  embedded?: boolean;
+  /** Called after a reply posts successfully (e.g. to close the inline box). */
+  onDone?: () => void;
 }) {
   const router = useRouter();
   const [content, setContent] = React.useState("");
@@ -83,22 +93,35 @@ export function ReplyForm({
     setSubmitting(false);
     toast.success("Your reply was posted.");
     router.refresh();
+    onDone?.();
   }
 
   return (
     <form
       onSubmit={onSubmit}
-      className="flex gap-3 rounded-[14px] bg-surface-1 px-3.5 py-2.5 shadow-sm"
+      className={cn(
+        "flex gap-3",
+        embedded
+          ? "gap-2.5"
+          : "rounded-[14px] bg-surface-1 px-3.5 py-2 shadow-sm"
+      )}
     >
-      <UserAvatar profile={profile} className="h-10 w-10 shrink-0" />
+      <UserAvatar
+        profile={profile}
+        className={cn("shrink-0", embedded ? "h-8 w-8" : "h-10 w-10")}
+      />
 
       <div className="min-w-0 flex-1">
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Post your reply"
-          rows={2}
-          className="min-h-[52px] resize-none border-0 bg-transparent px-0 py-2 text-lg shadow-none focus-visible:ring-0"
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          rows={embedded ? 1 : 2}
+          className={cn(
+            "w-full resize-none border-0 bg-transparent px-0 py-1.5 text-lg shadow-none focus-visible:ring-0",
+            embedded ? "min-h-[38px]" : "min-h-[46px]"
+          )}
         />
 
         {attachment && (
@@ -108,7 +131,7 @@ export function ReplyForm({
           />
         )}
 
-        <div className="mt-2 flex items-center justify-between gap-3">
+        <div className="mt-1.5 flex items-center justify-between gap-3">
           <AttachmentToolbar
             userId={profile.id}
             bucket={POST_IMAGES_BUCKET}

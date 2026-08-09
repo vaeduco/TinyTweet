@@ -29,6 +29,9 @@ const REPLY_SELECT = "*, author:profiles!replies_user_id_fkey(*)";
 const FEED_LIMIT = 40;
 const LIST_LIMIT = 50;
 const SEARCH_LIMIT = 30;
+// Safety cap on how many replies one post loads at once, so a pathological
+// thread can't pull the whole table into memory or drive unbounded recursion.
+const REPLIES_LIMIT = 200;
 
 type RawPost = Post & { author: Profile };
 
@@ -342,7 +345,8 @@ export async function getReplies(
     .from("replies")
     .select(REPLY_SELECT)
     .eq("post_id", postId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(REPLIES_LIMIT);
 
   return (data ?? []) as unknown as ReplyWithAuthor[];
 }

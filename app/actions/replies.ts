@@ -31,6 +31,20 @@ export async function createReply(input: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be signed in to reply." };
 
+  // A threaded reply must attach to a parent on the SAME post; otherwise the
+  // tree is malformed (the client only ever sends a same-post parent). RLS on
+  // the lookup means an unviewable parent reads as missing and is rejected.
+  if (input.parentReplyId) {
+    const { data: parent } = await supabase
+      .from("replies")
+      .select("post_id")
+      .eq("id", input.parentReplyId)
+      .maybeSingle();
+    if (!parent || parent.post_id !== input.postId) {
+      return { error: "The reply you're responding to no longer exists." };
+    }
+  }
+
   const { data, error } = await supabase
     .from("replies")
     .insert({

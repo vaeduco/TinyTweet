@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPost, getReplies } from "@/lib/queries";
+import { buildReplyTree } from "@/lib/reply-tree";
 import { PostCard } from "@/components/post-card";
 import { ReplyForm } from "@/components/reply-form";
 import { ReplyCard } from "@/components/reply-card";
@@ -36,6 +37,7 @@ export default async function PostPage({
   if (!post) notFound();
 
   const replies = await getReplies(supabase, id);
+  const tree = buildReplyTree(replies);
 
   let profile: Profile | null = null;
   if (user) {
@@ -60,32 +62,34 @@ export default async function PostPage({
         <h1 className="text-xl font-bold">Post</h1>
       </div>
 
-      <div className="p-2">
+      <div className="flex flex-col gap-2 p-2">
         <PostCard post={post} currentUserId={user?.id ?? null} highlight />
-      </div>
-
-      <div className="px-2">
         <ReplyForm postId={post.id} profile={profile} />
+
+        {tree.length > 0 && (
+          <>
+            <h2 className="px-1.5 pt-0.5 text-sm font-semibold text-muted-foreground">
+              Replies
+            </h2>
+            {tree.map((node) => (
+              <ReplyCard
+                key={node.id}
+                node={node}
+                viewer={profile}
+                currentUserId={user?.id ?? null}
+                depth={0}
+              />
+            ))}
+          </>
+        )}
       </div>
 
-      {replies.length > 0 && (
-        <h2 className="px-4 pb-1 pt-3 text-sm font-semibold text-muted-foreground">
-          Replies
-        </h2>
-      )}
-
-      {replies.length === 0 ? (
-        <div className="px-6 py-16 text-center">
+      {tree.length === 0 && (
+        <div className="px-6 py-10 text-center">
           <p className="font-semibold">No replies yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Be the first to reply.
           </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2 p-2 pt-1">
-          {replies.map((r) => (
-            <ReplyCard key={r.id} reply={r} currentUserId={user?.id ?? null} />
-          ))}
         </div>
       )}
     </div>
