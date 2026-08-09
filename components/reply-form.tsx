@@ -109,10 +109,7 @@ export function ReplyForm({
           : "rounded-[14px] bg-surface-1 px-3.5 py-2 shadow-sm"
       )}
     >
-      <UserAvatar
-        profile={profile}
-        className={cn("shrink-0", embedded ? "h-8 w-8" : "h-10 w-10")}
-      />
+      <UserAvatar profile={profile} className="h-7 w-7 shrink-0" />
 
       <div className="min-w-0 flex-1">
         <Textarea
@@ -120,17 +117,14 @@ export function ReplyForm({
           onChange={(e) => setContent(e.target.value)}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          rows={embedded ? 1 : 2}
+          rows={1}
           onKeyDown={(e) => {
             if (e.key === "Escape" && onCancel && !submitting) {
               e.preventDefault();
               onCancel();
             }
           }}
-          className={cn(
-            "w-full resize-none border-0 bg-transparent px-0 py-1.5 text-lg shadow-none focus-visible:ring-0",
-            embedded ? "min-h-[38px]" : "min-h-[46px]"
-          )}
+          className="min-h-[34px] w-full resize-none border-0 bg-transparent px-0 py-1 text-lg leading-snug shadow-none focus-visible:ring-0"
         />
 
         {attachment && (
@@ -140,7 +134,7 @@ export function ReplyForm({
           />
         )}
 
-        <div className="mt-1.5 flex items-center justify-between gap-3">
+        <div className="mt-1 flex items-center justify-between gap-2">
           <AttachmentToolbar
             userId={profile.id}
             bucket={POST_IMAGES_BUCKET}
@@ -150,7 +144,7 @@ export function ReplyForm({
             disabled={submitting}
           />
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {content.length > 0 && (
               <span
                 className={cn(
@@ -169,6 +163,7 @@ export function ReplyForm({
               <Button
                 type="button"
                 variant="ghost"
+                size="sm"
                 className="px-3"
                 disabled={submitting}
                 onClick={onCancel}
@@ -176,7 +171,7 @@ export function ReplyForm({
                 Cancel
               </Button>
             )}
-            <Button type="submit" disabled={!canSubmit} className="px-5">
+            <Button type="submit" size="sm" disabled={!canSubmit} className="px-4">
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Reply
             </Button>
