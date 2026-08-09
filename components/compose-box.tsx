@@ -352,8 +352,10 @@ export function ComposeBox({
         </div>
       </div>
 
-      {/* Toolbar — sits below the text/image, separated by a thin top border. */}
-      <div className="mt-2 flex items-center gap-0.5 border-t border-border pt-1.5">
+      {/* Action row — toolbar icons (left) plus the counter, progress ring, and
+          Post button (right) on a single line, sitting tight against the text
+          area above it. */}
+      <div className="mt-1 flex items-center gap-0.5 border-t border-border pt-1.5">
         <input
           ref={fileInputRef}
           type="file"
@@ -380,32 +382,32 @@ export function ComposeBox({
           label="Add location"
           onClick={() => toast("Location tagging is coming soon.")}
         />
-      </div>
 
-      {/* Footer — right-aligned counter, progress ring, and Post button. */}
-      <div className="mt-1.5 flex items-center justify-end gap-3">
-        {count > 0 && (
-          <>
-            <span
-              className={cn(
-                "text-sm tabular-nums",
-                overLimit ? "font-semibold text-destructive" : "text-muted-foreground"
-              )}
-            >
-              {count}/{MAX_POST_LENGTH}
-            </span>
-            <ProgressRing value={count} max={MAX_POST_LENGTH} />
-          </>
-        )}
-        <Button
-          type="submit"
-          disabled={!canSubmit}
-          aria-describedby="compose-status"
-          className="rounded-full px-5 font-bold disabled:bg-surface-2 disabled:text-muted-foreground disabled:opacity-100"
-        >
-          {submitting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-          Post
-        </Button>
+        {/* Right-aligned: character counter, progress ring, and Post button. */}
+        <div className="ml-auto flex items-center gap-2">
+          {count > 0 && (
+            <>
+              <span
+                className={cn(
+                  "text-sm tabular-nums",
+                  overLimit ? "font-semibold text-destructive" : "text-muted-foreground"
+                )}
+              >
+                {count}/{MAX_POST_LENGTH}
+              </span>
+              <ProgressRing value={count} max={MAX_POST_LENGTH} />
+            </>
+          )}
+          <Button
+            type="submit"
+            disabled={!canSubmit}
+            aria-describedby="compose-status"
+            className="rounded-full px-5 font-bold disabled:bg-surface-2 disabled:text-muted-foreground disabled:opacity-100"
+          >
+            {submitting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+            Post
+          </Button>
+        </div>
       </div>
 
       {/* Screen-reader status: announces the count near the limit and when
