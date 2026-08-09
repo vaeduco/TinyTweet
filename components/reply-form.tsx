@@ -27,6 +27,7 @@ export function ReplyForm({
   autoFocus = false,
   embedded = false,
   onDone,
+  onCancel,
 }: {
   postId: string;
   profile: Profile | null;
@@ -37,6 +38,8 @@ export function ReplyForm({
   embedded?: boolean;
   /** Called after a reply posts successfully (e.g. to close the inline box). */
   onDone?: () => void;
+  /** When provided, shows a Cancel button (and Escape) to dismiss the box. */
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [content, setContent] = React.useState("");
@@ -118,6 +121,12 @@ export function ReplyForm({
           placeholder={placeholder}
           autoFocus={autoFocus}
           rows={embedded ? 1 : 2}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && onCancel && !submitting) {
+              e.preventDefault();
+              onCancel();
+            }
+          }}
           className={cn(
             "w-full resize-none border-0 bg-transparent px-0 py-1.5 text-lg shadow-none focus-visible:ring-0",
             embedded ? "min-h-[38px]" : "min-h-[46px]"
@@ -155,6 +164,17 @@ export function ReplyForm({
               >
                 {remaining}
               </span>
+            )}
+            {onCancel && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="px-3"
+                disabled={submitting}
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
             )}
             <Button type="submit" disabled={!canSubmit} className="px-5">
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

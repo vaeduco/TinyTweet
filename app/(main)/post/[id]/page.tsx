@@ -5,10 +5,10 @@ import type { Metadata } from "next";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPost, getReplies } from "@/lib/queries";
-import { buildReplyTree } from "@/lib/reply-tree";
+import { buildReplyThreads } from "@/lib/reply-threads";
 import { PostCard } from "@/components/post-card";
 import { ReplyForm } from "@/components/reply-form";
-import { ReplyCard } from "@/components/reply-card";
+import { CommentThread } from "@/components/comment-thread";
 import type { Profile } from "@/lib/types";
 
 export async function generateMetadata({
@@ -37,7 +37,7 @@ export default async function PostPage({
   if (!post) notFound();
 
   const replies = await getReplies(supabase, id);
-  const tree = buildReplyTree(replies);
+  const threads = buildReplyThreads(replies);
 
   let profile: Profile | null = null;
   if (user) {
@@ -66,25 +66,24 @@ export default async function PostPage({
         <PostCard post={post} currentUserId={user?.id ?? null} highlight />
         <ReplyForm postId={post.id} profile={profile} />
 
-        {tree.length > 0 && (
+        {threads.length > 0 && (
           <>
             <h2 className="px-1.5 pt-0.5 text-sm font-semibold text-muted-foreground">
               Replies
             </h2>
-            {tree.map((node) => (
-              <ReplyCard
-                key={node.id}
-                node={node}
+            {threads.map((thread) => (
+              <CommentThread
+                key={thread.comment.id}
+                thread={thread}
                 viewer={profile}
                 currentUserId={user?.id ?? null}
-                depth={0}
               />
             ))}
           </>
         )}
       </div>
 
-      {tree.length === 0 && (
+      {threads.length === 0 && (
         <div className="px-6 py-10 text-center">
           <p className="font-semibold">No replies yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
