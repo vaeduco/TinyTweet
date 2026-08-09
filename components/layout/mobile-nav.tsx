@@ -3,31 +3,16 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bookmark,
-  Home,
-  LogOut,
-  Search,
-  Settings,
-  User as UserIcon,
-} from "lucide-react";
+import { Home, Search, User as UserIcon } from "lucide-react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { NotificationsNavItem } from "@/components/notifications/notifications-nav-item";
 import { MessagesNavItem } from "@/components/messages/messages-nav-item";
 import { MobileMenu } from "@/components/layout/mobile-menu";
 import { ComposeModalButton } from "@/components/compose-modal";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
-import { signOut } from "@/app/auth/actions";
 import type { Profile } from "@/lib/types";
 
 /**
@@ -42,46 +27,13 @@ export function TopBar({ profile }: { profile: Profile | null }) {
       <div className="flex flex-1 items-center justify-start gap-1">
         {profile && <MobileMenu profile={profile} />}
         {profile ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                aria-label="Account menu"
-                className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <UserAvatar profile={profile} className="h-8 w-8" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link href={`/${profile.username}`}>
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/bookmarks">
-                  <Bookmark className="mr-2 h-4 w-4" />
-                  Bookmarks
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  void signOut();
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link
+            href={`/${profile.username}`}
+            aria-label="Your profile"
+            className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <UserAvatar profile={profile} className="h-8 w-8" />
+          </Link>
         ) : (
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">Log in</Link>
