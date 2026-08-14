@@ -88,15 +88,9 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
           </ul>
         )}
       </section>
-
-      <p className="px-4 text-xs text-muted-foreground">
-        {APP_FOOTER}
-      </p>
     </aside>
   );
 }
-
-const APP_FOOTER = "TinyTweet · Built with Next.js & Supabase";
 
 export function RightSidebarSkeleton() {
   return (
