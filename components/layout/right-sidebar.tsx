@@ -10,8 +10,11 @@ import { formatCount } from "@/lib/format";
 export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
   const [trends, suggestions] = await Promise.all([
-    getTrendingHashtags(supabase, { hours: 72, limit: 15 }),
-    getWhoToFollow(supabase, viewerId, 15),
+    // Effectively "all available": there are far fewer than 50 hashtags in the
+    // window and fewer than 50 followable accounts, so these caps just remove
+    // the visible limit while staying bounded if the dataset ever grows.
+    getTrendingHashtags(supabase, { hours: 72, limit: 50 }),
+    getWhoToFollow(supabase, viewerId, 50),
   ]);
 
   return (
