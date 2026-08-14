@@ -10,7 +10,7 @@ import { formatCount } from "@/lib/format";
 export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
   const [trends, suggestions] = await Promise.all([
-    getTrendingHashtags(supabase, { hours: 24, limit: 15 }),
+    getTrendingHashtags(supabase, { hours: 72, limit: 15 }),
     getWhoToFollow(supabase, viewerId, 10),
   ]);
 
