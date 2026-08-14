@@ -10,14 +10,14 @@ import { formatCount } from "@/lib/format";
 export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
   const [trends, suggestions] = await Promise.all([
-    getTrendingHashtags(supabase, { hours: 24, limit: 6 }),
-    getWhoToFollow(supabase, viewerId, 3),
+    getTrendingHashtags(supabase, { hours: 24, limit: 15 }),
+    getWhoToFollow(supabase, viewerId, 10),
   ]);
 
   return (
     <aside
       aria-label="Trending and suggestions"
-      className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-[350px] shrink-0 flex-col gap-4 overflow-y-auto py-3 pl-6 xl:flex"
+      className="scrollbar-subtle sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-[350px] shrink-0 flex-col gap-4 overflow-y-auto py-3 pl-6 xl:flex"
     >
       <SearchBar />
 
