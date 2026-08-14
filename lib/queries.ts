@@ -151,7 +151,12 @@ export async function getFollowingIds(
   return (data ?? []).map((f) => f.following_id);
 }
 
-/** Home feed: own posts + followed users, reverse-chronological. */
+/**
+ * Home feed: your own posts + the people you follow, reverse-chronological.
+ * When that following feed is sparse (you follow no one yet, or they haven't
+ * posted much), it's topped up with the most recent posts from everyone so Home
+ * is never empty — post-visibility RLS still hides blocked/private authors.
+ */
 export async function getFeed(
   client: Client,
   userId: string
@@ -168,11 +173,26 @@ export async function getFeed(
 
   if (error) throw error;
 
-  const posts = await withViewerMeta(
-    client,
-    (data ?? []) as unknown as RawPost[],
-    userId
-  );
+  let rows = (data ?? []) as unknown as RawPost[];
+
+  if (rows.length < FEED_LIMIT) {
+    const seen = new Set(rows.map((p) => p.id));
+    const { data: recent } = await client
+      .from("posts")
+      .select(POST_SELECT)
+      .order("created_at", { ascending: false })
+      .limit(FEED_LIMIT);
+    for (const p of (recent ?? []) as unknown as RawPost[]) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        rows.push(p);
+      }
+    }
+    rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    rows = rows.slice(0, FEED_LIMIT);
+  }
+
+  const posts = await withViewerMeta(client, rows, userId);
   return { posts, relevantAuthorIds: authorIds };
 }
 
