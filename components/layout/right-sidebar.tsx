@@ -11,7 +11,7 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
   const [trends, suggestions] = await Promise.all([
     getTrendingHashtags(supabase, { hours: 72, limit: 15 }),
-    getWhoToFollow(supabase, viewerId, 10),
+    getWhoToFollow(supabase, viewerId, 15),
   ]);
 
   return (
