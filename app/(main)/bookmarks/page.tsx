@@ -1,10 +1,13 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Compass } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getBookmarkCategories, getSavedPosts } from "@/lib/queries";
 import { PostCard } from "@/components/post-card";
 import { BookmarkCategoryBar } from "@/components/bookmark-category-bar";
+import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Bookmarks" };
@@ -38,19 +41,26 @@ export default async function BookmarksPage({
       </div>
 
       {posts.length === 0 ? (
-        <div className="px-6 py-16 text-center">
-          <Bookmark className="mx-auto h-7 w-7 text-muted-foreground" />
-          <p className="mt-3 text-lg font-bold">
-            {activeCategory
+        <EmptyState
+          icon={Bookmark}
+          title={
+            activeCategory
               ? `Nothing in “${activeCategory.name}” yet`
-              : "No bookmarks yet"}
-          </p>
-          <p className="mx-auto mt-1 max-w-xs text-muted-foreground">
-            {activeCategory
+              : "No bookmarks yet"
+          }
+          description={
+            activeCategory
               ? "Save posts into this category from the bookmark icon on any post."
-              : "Tap the bookmark icon on a post to save it here for later."}
-          </p>
-        </div>
+              : "Tap the bookmark icon on a post to save it here for later."
+          }
+        >
+          <Button asChild variant="outline" size="sm">
+            <Link href="/explore">
+              <Compass className="h-4 w-4" />
+              Explore posts
+            </Link>
+          </Button>
+        </EmptyState>
       ) : (
         <div className="flex flex-col gap-2 p-2">
           {posts.map((p) => (

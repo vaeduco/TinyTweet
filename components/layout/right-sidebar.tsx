@@ -3,8 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getTrendingHashtags, getWhoToFollow } from "@/lib/queries";
 import { SearchBar } from "@/components/search-bar";
-import { UserAvatar } from "@/components/user-avatar";
-import { FollowButton } from "@/components/follow-button";
+import { SuggestedFollows } from "@/components/suggested-follows";
 import { formatCount } from "@/lib/format";
 
 export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
@@ -53,42 +52,27 @@ export async function RightSidebar({ viewerId }: { viewerId: string | null }) {
       </section>
 
       <section className="overflow-hidden rounded-2xl bg-surface-1 shadow-sm">
-        <h2 className="px-4 pb-1 pt-3 text-lg font-extrabold">Who to follow</h2>
         {suggestions.length === 0 ? (
-          <p className="px-4 pb-4 text-sm text-muted-foreground">
-            No suggestions right now.
-          </p>
+          <>
+            <h2 className="px-4 pb-1 pt-3 text-lg font-extrabold">
+              Who to follow
+            </h2>
+            <p className="px-4 pb-4 text-sm text-muted-foreground">
+              No suggestions right now.
+            </p>
+          </>
         ) : (
-          <ul className="pb-1">
-            {suggestions.map((u) => (
-              <li
-                key={u.id}
-                className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted"
-              >
-                <Link href={`/${u.username}`} className="shrink-0">
-                  <UserAvatar profile={u} className="h-10 w-10" />
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/${u.username}`}
-                    className="block truncate text-sm font-semibold hover:underline"
-                  >
-                    {u.display_name || u.username}
-                  </Link>
-                  <p className="truncate text-sm text-muted-foreground">
-                    @{u.username}
-                  </p>
-                </div>
-                {viewerId && (
-                  <FollowButton
-                    targetUserId={u.id}
-                    initialStatus="none"
-                    size="sm"
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
+          <SuggestedFollows
+            suggestions={suggestions}
+            currentUserId={viewerId}
+            variant="plain"
+            className="pb-1"
+            heading={
+              <h2 className="px-4 pb-1 pt-3 text-lg font-extrabold">
+                Who to follow
+              </h2>
+            }
+          />
         )}
       </section>
     </aside>

@@ -1,12 +1,21 @@
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
-import { searchUsers, searchPosts } from "@/lib/queries";
+import { searchUsers, searchPosts, searchHashtags } from "@/lib/queries";
 import { SearchBar } from "@/components/search-bar";
 import { UserCard } from "@/components/user-card";
 import { PostCard } from "@/components/post-card";
+import { formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { FollowState } from "@/lib/types";
+
+const TABS = [
+  { key: "people", label: "People" },
+  { key: "posts", label: "Posts" },
+  { key: "hashtags", label: "Hashtags" },
+] as const;
+
+type SearchTab = (typeof TABS)[number]["key"];
 
 export const metadata = { title: "Search" };
 export const dynamic = "force-dynamic";
@@ -18,7 +27,9 @@ export default async function SearchPage({
 }) {
   const { q, tab } = await searchParams;
   const query = (q ?? "").trim();
-  const activeTab = tab === "posts" ? "posts" : "people";
+  const activeTab: SearchTab = TABS.some((t) => t.key === tab)
+    ? (tab as SearchTab)
+    : "people";
 
   const supabase = await createClient();
   const {
@@ -42,34 +53,29 @@ export default async function SearchPage({
       ) : (
         <>
           <nav aria-label="Search results" className="flex border-b border-border">
-            <Link
-              href={`/search?q=${encodeURIComponent(query)}&tab=people`}
-              className={cn(
-                "flex-1 py-3 text-center text-sm font-medium transition-colors hover:bg-muted/40",
-                activeTab === "people"
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground"
-              )}
-            >
-              People
-            </Link>
-            <Link
-              href={`/search?q=${encodeURIComponent(query)}&tab=posts`}
-              className={cn(
-                "flex-1 py-3 text-center text-sm font-medium transition-colors hover:bg-muted/40",
-                activeTab === "posts"
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground"
-              )}
-            >
-              Posts
-            </Link>
+            {TABS.map((t) => (
+              <Link
+                key={t.key}
+                href={`/search?q=${encodeURIComponent(query)}&tab=${t.key}`}
+                aria-current={activeTab === t.key ? "page" : undefined}
+                className={cn(
+                  "flex-1 py-3 text-center text-sm font-medium transition-colors hover:bg-muted/40",
+                  activeTab === t.key
+                    ? "border-b-2 border-primary text-foreground"
+                    : "text-muted-foreground"
+                )}
+              >
+                {t.label}
+              </Link>
+            ))}
           </nav>
 
           {activeTab === "people" ? (
             <PeopleResults query={query} viewerId={user?.id ?? null} />
-          ) : (
+          ) : activeTab === "posts" ? (
             <PostResults query={query} viewerId={user?.id ?? null} />
+          ) : (
+            <HashtagResults query={query} />
           )}
         </>
       )}
@@ -152,5 +158,39 @@ async function PostResults({
         <PostCard key={p.id} post={p} currentUserId={viewerId} />
       ))}
     </div>
+  );
+}
+
+async function HashtagResults({ query }: { query: string }) {
+  const supabase = await createClient();
+  const tags = await searchHashtags(supabase, query);
+
+  if (tags.length === 0) {
+    return (
+      <div className="px-6 py-16 text-center">
+        <p className="text-lg font-bold">No hashtags found</p>
+        <p className="mt-1 text-muted-foreground">
+          No results for &ldquo;{query}&rdquo;.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="flex flex-col gap-2 p-2">
+      {tags.map((t) => (
+        <li key={t.tag}>
+          <Link
+            href={`/hashtag/${t.tag}`}
+            className="block rounded-[14px] bg-surface-1 px-3.5 py-2.5 shadow-sm transition-colors hover:bg-surface-2/40"
+          >
+            <p className="truncate font-bold break-anywhere">#{t.tag}</p>
+            <p className="text-sm text-muted-foreground">
+              {formatCount(t.count)} {t.count === 1 ? "post" : "posts"}
+            </p>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

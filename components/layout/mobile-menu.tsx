@@ -4,7 +4,16 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Bell, Bookmark, Home, LogOut, Mail, Menu, Settings } from "lucide-react";
+import {
+  Bell,
+  Bookmark,
+  Compass,
+  Home,
+  LogOut,
+  Mail,
+  Menu,
+  Settings,
+} from "lucide-react";
 
 import { SearchBar } from "@/components/search-bar";
 import { UserAvatar } from "@/components/user-avatar";
@@ -157,6 +166,12 @@ export function MobileMenu({ profile }: { profile: Profile }) {
 
           <nav aria-label="Menu" className="flex flex-col gap-1">
             <MenuRow href="/" label="Home" icon={Home} active={isActive("/")} />
+            <MenuRow
+              href="/explore"
+              label="Explore"
+              icon={Compass}
+              active={isActive("/explore")}
+            />
             <MenuRow
               href="/notifications"
               label="Notifications"

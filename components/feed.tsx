@@ -59,12 +59,15 @@ export function Feed({
   currentUserId,
   profile,
   relevantAuthorIds,
+  emptyState,
 }: {
   initialPosts: PostWithAuthor[];
   currentUserId: string | null;
   profile: Profile | null;
   /** Author ids whose new posts should stream into this feed (self + following). */
   relevantAuthorIds: string[];
+  /** Rendered instead of the default placeholder when the feed is empty. */
+  emptyState?: React.ReactNode;
 }) {
   const supabase = React.useMemo(() => createClient(), []);
   const [posts, setPosts] = React.useState<PostWithAuthor[]>(initialPosts);
@@ -159,13 +162,15 @@ export function Feed({
       )}
 
       {posts.length === 0 ? (
-        <div className="px-6 py-16 text-center">
-          <p className="text-lg font-semibold">Your feed is quiet</p>
-          <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-            Share your first thought above, or find people to follow from the
-            search page.
-          </p>
-        </div>
+        emptyState ?? (
+          <div className="px-6 py-16 text-center">
+            <p className="text-lg font-semibold">Your feed is quiet</p>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+              Share your first thought above, or find people to follow from the
+              search page.
+            </p>
+          </div>
+        )
       ) : (
         <div className="flex flex-col gap-2 p-2">
           {posts.map((post) => (

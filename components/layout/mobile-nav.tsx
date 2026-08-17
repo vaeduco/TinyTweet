@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, User as UserIcon } from "lucide-react";
+import { Compass, Home, User as UserIcon } from "lucide-react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -65,10 +65,12 @@ export function MobileBottomNav({ profile }: { profile: Profile | null }) {
         <div className="mx-auto flex max-w-md items-center justify-around">
           <BottomLink href="/" label="Home" icon={Home} active={pathname === "/"} />
           <BottomLink
-            href="/search"
-            label="Search"
-            icon={Search}
-            active={pathname.startsWith("/search")}
+            href="/explore"
+            label="Explore"
+            icon={Compass}
+            active={
+              pathname.startsWith("/explore") || pathname.startsWith("/search")
+            }
           />
           {profile && <ComposeModalButton profile={profile} />}
           {profile && <MessagesNavItem variant="bottom" />}

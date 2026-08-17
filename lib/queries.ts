@@ -16,6 +16,7 @@ import type {
   ProfileWithStats,
   Reply,
   ReplyWithAuthor,
+  SuggestedProfile,
 } from "@/lib/types";
 import { extractHashtags } from "@/lib/parse";
 
@@ -196,7 +197,34 @@ export async function getFeed(
   return { posts, relevantAuthorIds: authorIds };
 }
 
-/** The user's own posts, with any pinned post floated to the top. */
+/**
+ * Strict "Following" feed: only your own posts + the people you actually follow,
+ * reverse-chronological, with NO global backfill. Unlike getFeed this is empty
+ * for a user who follows no one — which is exactly what drives the friendly
+ * "your feed is quiet, follow some people" empty state on the Following tab.
+ */
+export async function getFollowingFeed(
+  client: Client,
+  userId: string
+): Promise<{ posts: PostWithAuthor[]; relevantAuthorIds: string[] }> {
+  const followingIds = await getFollowingIds(client, userId);
+  const authorIds = [userId, ...followingIds];
+
+  const { data, error } = await client
+    .from("posts")
+    .select(POST_SELECT)
+    .in("user_id", authorIds)
+    .order("created_at", { ascending: false })
+    .limit(FEED_LIMIT);
+  if (error) throw error;
+
+  const posts = await withViewerMeta(
+    client,
+    (data ?? []) as unknown as RawPost[],
+    userId
+  );
+  return { posts, relevantAuthorIds: authorIds };
+}
 export async function getUserPosts(
   client: Client,
   profileId: string,
@@ -566,47 +594,235 @@ export async function getTrendingHashtags(
     .slice(0, limit);
 }
 
-/** Suggested profiles the viewer doesn't already follow (newest first). */
+// Cap how many of the viewer's follows seed the second-degree "mutual" lookup,
+// so the `in(...)` filter can't overflow the request URL for a very active user.
+const MUTUAL_SEED_CAP = 200;
+// How many newest accounts to pool for the non-mutual "filler" slots. We rotate
+// this pool by a coarse time bucket so repeat visits don't show an identical
+// static list (part of "refresh suggestions periodically").
+const SUGGEST_POOL = 60;
+
+/** Rotate an array left by `n` (safe for any integer, incl. negative/zero). */
+function rotate<T>(arr: T[], n: number): T[] {
+  if (arr.length === 0) return arr;
+  const k = ((Math.trunc(n) % arr.length) + arr.length) % arr.length;
+  return k === 0 ? arr : [...arr.slice(k), ...arr.slice(0, k)];
+}
+
+/**
+ * Suggested accounts for "Who to follow".
+ *
+ * Ranking, best-first:
+ *   1. Mutual connections — accounts followed by people the viewer follows,
+ *      ordered by how many of those follows also follow them (a "Followed by
+ *      Alex and 3 others" signal), annotated for a label.
+ *   2. Filler — the newest accounts, rotated by a 15-minute time bucket so the
+ *      list refreshes between visits instead of being static.
+ *
+ * Always excluded: the viewer, every existing relationship (pending included),
+ * blocked accounts, and accounts the viewer has dismissed with the "x".
+ */
 export async function getWhoToFollow(
   client: Client,
   viewerId: string | null,
   limit = 3
-): Promise<Profile[]> {
+): Promise<SuggestedProfile[]> {
+  if (limit <= 0) return [];
+
+  // Signed-out (e.g. a public page): just the newest accounts, no personalization.
+  if (!viewerId) {
+    const { data } = await client
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return (data ?? []) as SuggestedProfile[];
+  }
+
+  const exclude = new Set<string>([viewerId]);
+  const followingAccepted: string[] = [];
+
+  // Existing relationships (any status) are excluded; the accepted ones seed the
+  // mutual-connections lookup.
+  const { data: rels } = await client
+    .from("follows")
+    .select("following_id, status")
+    .eq("follower_id", viewerId);
+  for (const r of rels ?? []) {
+    exclude.add(r.following_id);
+    if (r.status === "accepted") followingAccepted.push(r.following_id);
+  }
+
+  // Blocked accounts: following one is rejected by RLS, so never suggest them.
+  const { data: blocked } = await client
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", viewerId);
+  for (const b of blocked ?? []) exclude.add(b.blocked_id);
+
+  // Accounts the viewer explicitly dismissed.
+  const { data: dismissed } = await client
+    .from("dismissed_suggestions")
+    .select("dismissed_id")
+    .eq("user_id", viewerId);
+  for (const d of dismissed ?? []) exclude.add(d.dismissed_id);
+
+  // ---- 1. Mutual connections (second-degree) ----
+  const mutualCount = new Map<string, number>();
+  const mutualFollowers = new Map<string, string[]>(); // candidate -> seed follower ids
+  if (followingAccepted.length > 0) {
+    const seeds = followingAccepted.slice(0, MUTUAL_SEED_CAP);
+    // RLS (follows_select_visible) only returns accepted edges whose endpoints
+    // the viewer may see, which is exactly what we want to count.
+    const { data: second } = await client
+      .from("follows")
+      .select("follower_id, following_id")
+      .in("follower_id", seeds)
+      .eq("status", "accepted");
+    for (const row of second ?? []) {
+      const cand = row.following_id;
+      if (exclude.has(cand)) continue;
+      mutualCount.set(cand, (mutualCount.get(cand) ?? 0) + 1);
+      const arr = mutualFollowers.get(cand) ?? [];
+      if (arr.length < 3) arr.push(row.follower_id);
+      mutualFollowers.set(cand, arr);
+    }
+  }
+
+  const mutualRanked = Array.from(mutualCount.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([id]) => id);
+
+  const result: SuggestedProfile[] = [];
+  const picked = new Set<string>();
+
+  if (mutualRanked.length > 0) {
+    // Resolve display names for the seed followers we'll cite in the label.
+    const nameIds = new Set<string>();
+    for (const id of mutualRanked) {
+      for (const fid of mutualFollowers.get(id) ?? []) nameIds.add(fid);
+    }
+    const nameById = new Map<string, string>();
+    if (nameIds.size > 0) {
+      const { data: names } = await client
+        .from("profiles")
+        .select("id, username, display_name")
+        .in("id", [...nameIds]);
+      for (const p of (names ?? []) as Pick<
+        Profile,
+        "id" | "username" | "display_name"
+      >[]) {
+        nameById.set(p.id, p.display_name || p.username);
+      }
+    }
+
+    const { data: mProfiles } = await client
+      .from("profiles")
+      .select("*")
+      .in("id", mutualRanked);
+    const byId = new Map(((mProfiles ?? []) as Profile[]).map((p) => [p.id, p]));
+    for (const id of mutualRanked) {
+      const prof = byId.get(id);
+      if (!prof) continue;
+      picked.add(id);
+      result.push({
+        ...prof,
+        mutual_count: mutualCount.get(id) ?? 0,
+        mutual_names: (mutualFollowers.get(id) ?? [])
+          .map((fid) => nameById.get(fid))
+          .filter((n): n is string => !!n),
+      });
+    }
+  }
+
+  // ---- 2. Filler: newest accounts, rotated so the list isn't static ----
+  if (result.length < limit) {
+    const { data: recent } = await client
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(SUGGEST_POOL);
+    const pool = ((recent ?? []) as Profile[]).filter(
+      (p) => !exclude.has(p.id) && !picked.has(p.id)
+    );
+    const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
+    for (const p of rotate(pool, bucket)) {
+      if (result.length >= limit) break;
+      picked.add(p.id);
+      result.push(p as SuggestedProfile);
+    }
+  }
+
+  return result.slice(0, limit);
+}
+
+/**
+ * "Suggested for you" posts for Explore: the most-engaged recent posts from
+ * accounts the viewer does NOT already follow, so it surfaces new voices.
+ */
+export async function getPopularPosts(
+  client: Client,
+  viewerId: string | null,
+  limit = 12
+): Promise<PostWithAuthor[]> {
   const exclude = new Set<string>();
   if (viewerId) {
     exclude.add(viewerId);
-    // Exclude EVERY existing relationship (pending requests included), so a
-    // privately-requested account is never re-suggested with a "Follow" button
-    // whose click would silently cancel the request.
-    const { data: rels } = await client
-      .from("follows")
-      .select("following_id")
-      .eq("follower_id", viewerId);
-    for (const r of rels ?? []) exclude.add(r.following_id);
-
-    // Exclude accounts the viewer has blocked: following one is rejected by RLS
-    // (follows_insert_self checks is_blocked_by), so suggesting it only yields a
-    // confusing error toast.
-    const { data: blocked } = await client
-      .from("blocks")
-      .select("blocked_id")
-      .eq("blocker_id", viewerId);
-    for (const b of blocked ?? []) exclude.add(b.blocked_id);
+    for (const id of await getFollowingIds(client, viewerId)) exclude.add(id);
   }
 
-  // Over-fetch a small batch and filter self/followed in JS, so the exclude
-  // set is never serialized into the request URL (an unbounded `not.in` filter
-  // can overflow the URL and silently return nothing for very active users).
-  const { data, error } = await client
-    .from("profiles")
-    .select("*")
+  const { data } = await client
+    .from("posts")
+    .select(POST_SELECT)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
 
-  if (error) return [];
+  const rows = ((data ?? []) as unknown as RawPost[])
+    .filter((p) => !exclude.has(p.user_id))
+    .sort(
+      (a, b) =>
+        b.like_count + b.reply_count - (a.like_count + a.reply_count) ||
+        (a.created_at < b.created_at ? 1 : -1)
+    )
+    .slice(0, limit);
 
-  return ((data ?? []) as Profile[])
-    .filter((p) => !exclude.has(p.id))
+  return withViewerMeta(client, rows, viewerId);
+}
+
+/**
+ * Hashtags matching a search term, most-used first. Hashtags aren't stored, so
+ * this scans recent post content the same way trending does. Exact/prefix
+ * matches rank above mere substring matches.
+ */
+export async function searchHashtags(
+  client: Client,
+  query: string,
+  limit = 20
+): Promise<TrendingHashtag[]> {
+  const term = query.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+  if (!term) return [];
+
+  const { data } = await client
+    .from("posts")
+    .select("content")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const counts = new Map<string, number>();
+  for (const p of (data ?? []) as { content: string }[]) {
+    for (const tag of extractHashtags(p.content)) {
+      if (tag.includes(term)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(counts, ([tag, count]) => ({ tag, count }))
+    .sort(
+      (a, b) =>
+        Number(b.tag.startsWith(term)) - Number(a.tag.startsWith(term)) ||
+        b.count - a.count ||
+        a.tag.localeCompare(b.tag)
+    )
     .slice(0, limit);
 }
 

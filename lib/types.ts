@@ -73,6 +73,13 @@ export type BookmarkCategory = {
   created_at: string;
 };
 
+/** A "Who to follow" suggestion the viewer dismissed (never re-suggested). */
+export type DismissedSuggestion = {
+  user_id: string;
+  dismissed_id: string;
+  created_at: string;
+};
+
 /** A browser/device that opted into Web Push (one per PushManager endpoint). */
 export type PushSubscription = {
   id: string;
@@ -224,6 +231,17 @@ export type ConversationWithMeta = Conversation & {
   pinned_at: string | null;
 };
 
+/**
+ * A suggested account for "Who to follow", optionally annotated with how many
+ * of the viewer's follows also follow it (for a "Followed by …" label).
+ */
+export type SuggestedProfile = Profile & {
+  /** How many people the viewer follows also follow this account. */
+  mutual_count?: number;
+  /** A few display names of those mutual followers, for the label. */
+  mutual_names?: string[];
+};
+
 /** Profile plus counts + whether the viewer follows this profile. */
 export type ProfileWithStats = Profile & {
   followers_count: number;
@@ -331,6 +349,16 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<PushSubscription>;
+        Relationships: [];
+      };
+      dismissed_suggestions: {
+        Row: DismissedSuggestion;
+        Insert: {
+          user_id: string;
+          dismissed_id: string;
+          created_at?: string;
+        };
+        Update: Partial<DismissedSuggestion>;
         Relationships: [];
       };
       polls: {

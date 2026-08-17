@@ -3,9 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BellOff, Pin } from "lucide-react";
+import { Archive, BellOff, MessagesSquare, PenSquare, Pin } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
 import { ConversationAvatar } from "@/components/messages/conversation-avatar";
 import { ConversationMenu } from "@/components/messages/conversation-menu";
 import { useMessages } from "@/components/messages/messages-provider";
@@ -82,16 +84,24 @@ export function Inbox({
       </nav>
 
       {filtered.length === 0 ? (
-        <div className="px-6 py-16 text-center">
-          <p className="text-lg font-bold">
-            {tab === "archived" ? "No archived chats" : "No messages yet"}
-          </p>
-          <p className="mx-auto mt-1 max-w-xs text-muted-foreground">
-            {tab === "archived"
+        <EmptyState
+          icon={tab === "archived" ? Archive : MessagesSquare}
+          title={tab === "archived" ? "No archived chats" : "No messages yet"}
+          description={
+            tab === "archived"
               ? "Conversations you archive show up here."
-              : "Start a conversation from someone's profile, or tap New message."}
-          </p>
-        </div>
+              : "Start a conversation from someone's profile, or tap New message."
+          }
+        >
+          {tab === "all" && (
+            <Button asChild size="sm">
+              <Link href="/messages/new">
+                <PenSquare className="h-4 w-4" />
+                New message
+              </Link>
+            </Button>
+          )}
+        </EmptyState>
       ) : (
         <div className="flex flex-col gap-2 p-2">
           {filtered.map((c) => {
