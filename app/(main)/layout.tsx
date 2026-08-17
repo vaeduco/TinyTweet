@@ -14,6 +14,7 @@ import {
   RightSidebarSkeleton,
 } from "@/components/layout/right-sidebar";
 import { MobileBottomNav, TopBar } from "@/components/layout/mobile-nav";
+import { PushController } from "@/components/push/push-controller";
 import type { NotificationWithActor, Profile } from "@/lib/types";
 
 export default async function MainLayout({
@@ -65,6 +66,9 @@ export default async function MainLayout({
         initialMutedIds={initialMutedConversationIds}
       >
         <PresenceProvider userId={user?.id ?? null}>
+        {user && (
+          <PushController soundEnabled={profile?.notify_sound ?? true} />
+        )}
         <div className="min-h-dvh">
           <TopBar profile={profile} />
 

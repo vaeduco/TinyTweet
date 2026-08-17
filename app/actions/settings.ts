@@ -190,6 +190,7 @@ export async function setNotificationPrefs(prefs: {
   notify_likes?: boolean;
   notify_replies?: boolean;
   notify_mentions?: boolean;
+  notify_sound?: boolean;
 }): Promise<Result> {
   const supabase = await createClient();
   const {
@@ -203,12 +204,14 @@ export async function setNotificationPrefs(prefs: {
     notify_likes?: boolean;
     notify_replies?: boolean;
     notify_mentions?: boolean;
+    notify_sound?: boolean;
   } = {};
   for (const k of [
     "notify_follows",
     "notify_likes",
     "notify_replies",
     "notify_mentions",
+    "notify_sound",
   ] as const) {
     if (typeof prefs[k] === "boolean") update[k] = prefs[k];
   }

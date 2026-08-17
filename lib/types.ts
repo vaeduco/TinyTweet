@@ -14,6 +14,7 @@ export type Profile = {
   notify_likes: boolean;
   notify_replies: boolean;
   notify_mentions: boolean;
+  notify_sound: boolean;
   dm_privacy: DmPrivacy;
   is_private: boolean;
   created_at: string;
@@ -69,6 +70,17 @@ export type BookmarkCategory = {
   id: string;
   user_id: string;
   name: string;
+  created_at: string;
+};
+
+/** A browser/device that opted into Web Push (one per PushManager endpoint). */
+export type PushSubscription = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
   created_at: string;
 };
 
@@ -243,6 +255,7 @@ export type Database = {
           notify_likes?: boolean;
           notify_replies?: boolean;
           notify_mentions?: boolean;
+          notify_sound?: boolean;
           dm_privacy?: DmPrivacy;
           is_private?: boolean;
           created_at?: string;
@@ -304,6 +317,20 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<SavedPost>;
+        Relationships: [];
+      };
+      push_subscriptions: {
+        Row: PushSubscription;
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<PushSubscription>;
         Relationships: [];
       };
       polls: {

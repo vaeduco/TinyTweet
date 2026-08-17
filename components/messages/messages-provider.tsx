@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -9,6 +11,8 @@ import {
   markConversationUnread,
   setConversationMuted,
 } from "@/app/actions/messages";
+import { playPing } from "@/lib/sound";
+import { BoundedSet } from "@/lib/bounded-set";
 import type { Message } from "@/lib/types";
 
 type MessagesContextValue = {
@@ -53,6 +57,7 @@ export function MessagesProvider({
   initialMutedIds: string[];
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
   const [unread, setUnread] = React.useState<Set<string>>(
     () => new Set(initialUnreadIds)
@@ -61,6 +66,15 @@ export function MessagesProvider({
     () => new Set(initialMutedIds)
   );
   const activeRef = React.useRef<string | null>(null);
+  // Mirror muted into a ref so the realtime handler (created once) can read the
+  // current value without re-subscribing.
+  const mutedRef = React.useRef(muted);
+  React.useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
+  // De-dupe message rows: postgres_changes can redeliver on reconnect, which
+  // must not re-toast (or re-count) a message already handled.
+  const seenRef = React.useRef(new BoundedSet());
 
   const removeFrom = React.useCallback(
     (setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) => {
@@ -134,19 +148,41 @@ export function MessagesProvider({
         (payload) => {
           const row = payload.new as Message;
           if (row.sender_id === userId) return;
+          if (seenRef.current.has(row.id)) return; // redelivered — ignore
+          seenRef.current.add(row.id);
           void markConversationDelivered(row.conversation_id);
           if (row.conversation_id === activeRef.current) {
             void markConversationRead(row.conversation_id);
             return;
           }
           addTo(setUnread, row.conversation_id);
+
+          // Toast + sound, but not for conversations the user has muted.
+          if (mutedRef.current.has(row.conversation_id)) return;
+          void (async () => {
+            const { data: sender } = await supabase
+              .from("profiles")
+              .select("display_name, username")
+              .eq("id", row.sender_id)
+              .single();
+            const name = sender
+              ? sender.display_name || sender.username
+              : "Someone";
+            toast(`New message from ${name}`, {
+              action: {
+                label: "Open",
+                onClick: () => router.push(`/messages/${row.conversation_id}`),
+              },
+            });
+            playPing();
+          })();
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId, addTo]);
+  }, [supabase, userId, addTo, router]);
 
   const unreadCount = React.useMemo(() => {
     let n = 0;

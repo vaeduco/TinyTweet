@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -13,6 +15,9 @@ import {
   markNotificationRead,
 } from "@/app/actions/notifications";
 import { getNotifications, getUnreadNotificationCount } from "@/lib/queries";
+import { notificationText } from "@/lib/notification-text";
+import { playPing } from "@/lib/sound";
+import { BoundedSet } from "@/lib/bounded-set";
 
 type NotificationsContextValue = {
   enabled: boolean;
@@ -50,11 +55,15 @@ export function NotificationsProvider({
   initialUnread: number;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
   const [notifications, setNotifications] =
     React.useState<NotificationWithActor[]>(initialNotifications);
   const [unreadCount, setUnreadCount] = React.useState(initialUnread);
 
+  // Synchronous de-dupe so two redelivered rows can't both pass the (async)
+  // guard and double-toast/ping/count before either commits to state.
+  const seenRef = React.useRef(new BoundedSet());
   // Keep a ref of current notifications for read-state checks without
   // re-creating the callbacks on every change.
   const notifsRef = React.useRef(notifications);
@@ -92,8 +101,11 @@ export function NotificationsProvider({
         },
         async (payload) => {
           const row = payload.new as Notification;
-          // Ignore rows we already have — realtime can redeliver on reconnect,
-          // and the count must not double-increment.
+          // Ignore rows we already handled — realtime can redeliver on
+          // reconnect. This check is synchronous (before the await) so two
+          // rapid redeliveries can't both slip through and double-alert.
+          if (seenRef.current.has(row.id)) return;
+          seenRef.current.add(row.id);
           if (notifsRef.current.some((n) => n.id === row.id)) return;
 
           const { data: actor } = await supabase
@@ -103,12 +115,23 @@ export function NotificationsProvider({
             .single();
           if (!actor || !active) return;
 
+          const enriched: NotificationWithActor = {
+            ...row,
+            actor: actor as Profile,
+          };
           setNotifications((prev) =>
             prev.some((n) => n.id === row.id)
               ? prev
-              : [{ ...row, actor: actor as Profile }, ...prev].slice(0, MAX_KEPT)
+              : [enriched, ...prev].slice(0, MAX_KEPT)
           );
           if (!row.is_read) setUnreadCount((c) => c + 1);
+
+          // Brief in-app alert (tappable to jump) + a subtle sound.
+          const { body, url } = notificationText(enriched);
+          toast(body, {
+            action: { label: "View", onClick: () => router.push(url) },
+          });
+          playPing();
         }
       )
       .on(
@@ -136,7 +159,7 @@ export function NotificationsProvider({
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId]);
+  }, [supabase, userId, router]);
 
   const markRead = React.useCallback((id: string) => {
     const target = notifsRef.current.find((n) => n.id === id);
